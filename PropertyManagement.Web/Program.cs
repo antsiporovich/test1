@@ -37,6 +37,7 @@ builder.Services.AddScoped<IPropertyService, PropertyService>();
 builder.Services.AddScoped<IUnitService, UnitService>();
 builder.Services.AddScoped<IApplicationQueryService, ApplicationQueryService>();
 builder.Services.AddScoped<IUnitBrowseService, UnitBrowseService>();
+builder.Services.AddScoped<IApplicationService, ApplicationService>();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddOpenApi();

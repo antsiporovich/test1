@@ -23,4 +23,8 @@ public static class ApplicationStatusRules
     ];
 
     public static bool IsTerminal(this ApplicationStatus status) => TerminalStatuses.Contains(status);
+
+    /// <summary>Editable only in Draft or Returned (Features/04, WIZ-5).</summary>
+    public static bool IsEditable(this ApplicationStatus status) =>
+        status is ApplicationStatus.Draft or ApplicationStatus.Returned;
 }

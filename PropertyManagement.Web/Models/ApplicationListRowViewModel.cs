@@ -8,4 +8,5 @@ public class ApplicationListRowViewModel
     public string Status { get; set; } = string.Empty;
     public string? ApplicantName { get; set; }
     public DateTimeOffset LastUpdatedAtUtc { get; set; }
+    public bool IsWithdrawable { get; set; }
 }

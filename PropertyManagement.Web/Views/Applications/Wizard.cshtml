@@ -1,0 +1,67 @@
+@model PropertyManagement.Web.Models.ApplicationWizardViewModel
+@{
+    ViewData["Title"] = "Rental Application";
+}
+
+@Html.AntiForgeryToken()
+
+<h1>Rental Application</h1>
+<p class="text-muted">Status: <span class="badge text-bg-secondary">@Model.Status</span></p>
+
+@if (Model.ReturnComment is not null)
+{
+    <div class="alert alert-warning">
+        <strong>Returned for correction:</strong> @Model.ReturnComment
+    </div>
+}
+
+@if (Model.SubmitError is not null)
+{
+    <div class="alert alert-danger">@Model.SubmitError</div>
+}
+
+<form method="post" asp-controller="Applications" asp-action="Wizard" asp-route-id="@Model.ApplicationId">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="CurrentStep" />
+
+    @if (Model.CurrentStep == WizardStep.ApplicantInformation)
+    {
+        <partial name="_ApplicantInformationSection" for="ApplicantInformation" />
+    }
+    else if (Model.CurrentStep == WizardStep.ResidenceHistory)
+    {
+        <div id="residenceHistoryRegion">
+            @await Component.InvokeAsync("ResidenceHistorySection", new { applicationId = Model.ApplicationId, isEditable = Model.IsEditable })
+        </div>
+    }
+    else
+    {
+        <partial name="_Summary" model="Model" />
+    }
+
+    @if (Model.IsEditable)
+    {
+        <div class="d-flex justify-content-between mt-3">
+            <div>
+                @if (Model.CurrentStep != WizardStep.ApplicantInformation)
+                {
+                    <button type="submit" name="command" value="Back" class="btn btn-secondary">Back</button>
+                }
+            </div>
+            <div>
+                @if (Model.CurrentStep == WizardStep.Summary)
+                {
+                    <button type="submit" name="command" value="Submit" class="btn btn-primary">Submit</button>
+                }
+                else
+                {
+                    <button type="submit" name="command" value="Continue" class="btn btn-primary">Continue</button>
+                }
+            </div>
+        </div>
+    }
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

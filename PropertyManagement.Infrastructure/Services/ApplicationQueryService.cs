@@ -1,5 +1,6 @@
 using PropertyManagement.Domain.Entities;
 using PropertyManagement.Domain.Enums;
+using PropertyManagement.Domain.Rules;
 using PropertyManagement.Infrastructure.Data;
 
 namespace PropertyManagement.Infrastructure.Services;
@@ -13,7 +14,7 @@ public class ApplicationQueryService(AppDbContext db) : IApplicationQueryService
         // Ownership scope applied first so a filter can never widen past it (LIST-1/LIST-3).
         if (isApplicant)
         {
-            query = query.Where(a => a.Applicants.Any(x => x.UserId == userId));
+            query = query.OwnedBy(userId);
         }
 
         if (status is not null)

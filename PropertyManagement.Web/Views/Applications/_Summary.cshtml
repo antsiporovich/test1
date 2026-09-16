@@ -1,0 +1,45 @@
+@model PropertyManagement.Web.Models.ApplicationWizardViewModel
+
+<h2 class="h4">Summary</h2>
+
+<div class="card mb-3">
+    <div class="card-header">Applicant Information</div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Name</dt>
+            <dd class="col-sm-9">@Model.ApplicantInformation.FullName</dd>
+            <dt class="col-sm-3">Phone</dt>
+            <dd class="col-sm-9">@Model.ApplicantInformation.Phone</dd>
+            <dt class="col-sm-3">Email</dt>
+            <dd class="col-sm-9">@Model.ApplicantInformation.Email</dd>
+            <dt class="col-sm-3">Address</dt>
+            <dd class="col-sm-9">
+                @Model.ApplicantInformation.AddressLine1@(string.IsNullOrEmpty(Model.ApplicantInformation.AddressLine2) ? "" : $", {Model.ApplicantInformation.AddressLine2}"),
+                @Model.ApplicantInformation.City, @Model.ApplicantInformation.State @Model.ApplicantInformation.ZipCode
+            </dd>
+        </dl>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header">Residence History</div>
+    <div class="card-body">
+        @if (Model.Residences.Count == 0)
+        {
+            <p class="text-muted mb-0">No prior residences.</p>
+        }
+        else
+        {
+            <ul class="list-group list-group-flush">
+                @foreach (var r in Model.Residences)
+                {
+                    <li class="list-group-item">
+                        @r.AddressLine1, @r.City, @r.State @r.ZipCode
+                        — Landlord: @r.LandlordName (@r.LandlordPhone)
+                        — @r.MoveInDate.ToString("d") to @(r.MoveOutDate?.ToString("d") ?? "present")
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>

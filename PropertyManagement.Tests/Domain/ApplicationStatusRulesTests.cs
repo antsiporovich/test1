@@ -19,4 +19,17 @@ public class ApplicationStatusRulesTests
     {
         status.IsTerminal().Should().Be(expected);
     }
+
+    [Theory]
+    [InlineData(ApplicationStatus.Draft, true)]
+    [InlineData(ApplicationStatus.Returned, true)]
+    [InlineData(ApplicationStatus.Submitted, false)]
+    [InlineData(ApplicationStatus.UnderReview, false)]
+    [InlineData(ApplicationStatus.Approved, false)]
+    [InlineData(ApplicationStatus.Denied, false)]
+    [InlineData(ApplicationStatus.Withdrawn, false)]
+    public void IsEditable_ReturnsExpected(ApplicationStatus status, bool expected)
+    {
+        status.IsEditable().Should().Be(expected);
+    }
 }

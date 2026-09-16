@@ -40,7 +40,8 @@ public class UnitBrowseService(AppDbContext db, TimeProvider timeProvider) : IUn
         }
 
         var existing = await db.Applications
-            .Where(a => a.UnitId == unitId && a.Applicants.Any(x => x.UserId == userId))
+            .Where(a => a.UnitId == unitId)
+            .OwnedBy(userId)
             .Where(a => !ApplicationStatusRules.TerminalStatuses.Contains(a.Status))
             .FirstOrDefaultAsync(ct);
         if (existing is not null)

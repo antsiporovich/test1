@@ -47,7 +47,6 @@ public class BrowseController(IUnitBrowseService browseService, UserManager<Appl
             return RedirectToAction(nameof(Index));
         }
 
-        // Epic 4's wizard doesn't exist yet; land on the Applications list (Epic 8) for now.
-        return RedirectToAction("Index", "Applications");
+        return RedirectToAction(nameof(ApplicationsController.Wizard), "Applications", new { id = result.Value!.Id });
     }
 }
