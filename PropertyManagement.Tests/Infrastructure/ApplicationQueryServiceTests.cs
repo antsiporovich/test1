@@ -110,4 +110,57 @@ public class ApplicationQueryServiceTests
         result.Should().ContainSingle();
         result[0].Applicants.Should().OnlyContain(a => a.UserId == "userB");
     }
+
+    [Theory]
+    [InlineData(false, new[] { "P1", "P1", "P2" })]
+    [InlineData(true, new[] { "P2", "P1", "P1" })]
+    public async Task BuildQuery_SortByProperty_OrdersAscendingOrDescending(bool descending, string[] expectedOrder)
+    {
+        using var db = CreateSeededContext();
+        var service = new ApplicationQueryService(db);
+
+        var result = await service.BuildQuery("anyUserId", isApplicant: false, sortKey: "property", descending: descending).ToListAsync();
+
+        result.Select(a => a.Unit.Property.Name).Should().Equal(expectedOrder);
+    }
+
+    [Fact]
+    public async Task BuildQuery_SortByStatus_Orders()
+    {
+        using var db = CreateSeededContext();
+        var service = new ApplicationQueryService(db);
+
+        var ascending = await service.BuildQuery("anyUserId", isApplicant: false, sortKey: "status", descending: false).ToListAsync();
+        var descending = await service.BuildQuery("anyUserId", isApplicant: false, sortKey: "status", descending: true).ToListAsync();
+
+        ascending.Select(a => a.Status).Should().BeInAscendingOrder();
+        descending.Select(a => a.Status).Should().BeInDescendingOrder();
+    }
+
+    [Fact]
+    public async Task BuildQuery_UnrecognizedSortKey_FallsBackToDefaultWithoutThrowing()
+    {
+        using var db = CreateSeededContext();
+        var service = new ApplicationQueryService(db);
+
+        // GRID-2: never interpolate a client-provided column name into the query —
+        // an unrecognized key must be safely ignored, not passed through to OrderBy.
+        var act = () => service.BuildQuery("anyUserId", isApplicant: false, sortKey: "'; DROP TABLE Applications; --").ToListAsync();
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task BuildQuery_ComposesWithSkipTakeAndCount_FilteredTotalExceedsPageLength()
+    {
+        using var db = CreateSeededContext();
+        var service = new ApplicationQueryService(db);
+        var query = service.BuildQuery("anyUserId", isApplicant: false, sortKey: "status");
+
+        var totalCount = await query.CountAsync();
+        var page = await query.Skip(0).Take(2).ToListAsync();
+
+        totalCount.Should().Be(3);
+        page.Should().HaveCount(2);
+    }
 }

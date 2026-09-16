@@ -62,6 +62,14 @@
     }
 </form>
 
+@if (Model.IsWithdrawable)
+{
+    <form asp-controller="Applications" asp-action="Withdraw" asp-route-id="@Model.ApplicationId" method="post" class="mt-2"
+          onsubmit="return confirm('Withdraw this application?');">
+        <button type="submit" class="btn btn-outline-secondary btn-sm">Withdraw application</button>
+    </form>
+}
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 }

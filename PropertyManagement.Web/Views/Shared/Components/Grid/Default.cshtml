@@ -1,0 +1,39 @@
+@model PropertyManagement.Web.Models.GridViewModel
+@using System.Text.Json
+
+<div class="grid-component"
+     data-grid-endpoint="@Model.ApiEndpoint"
+     data-grid-page-size="@Model.PageSize"
+     data-grid-row-url-template="@Model.RowUrlTemplate"
+     data-grid-fixed-params="@JsonSerializer.Serialize(Model.FixedParams)">
+    <table class="table table-sm align-middle">
+        <thead>
+            <tr>
+                @foreach (var col in Model.Columns)
+                {
+                    <th data-key="@col.Key" data-sortable="@col.Sortable.ToString().ToLowerInvariant()" data-type="@col.Type" class="@(col.Sortable ? "grid-sortable" : "")">
+                        @col.Header
+                        @if (col.Sortable)
+                        {
+                            <span class="grid-sort-indicator"></span>
+                        }
+                    </th>
+                }
+            </tr>
+        </thead>
+        <tbody class="grid-body">
+            <tr>
+                <td colspan="@Model.Columns.Count" class="text-muted">
+                    <span class="spinner-border spinner-border-sm"></span> Loading…
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <nav class="d-flex justify-content-between align-items-center">
+        <span class="grid-summary text-muted small"></span>
+        <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-outline-secondary grid-prev">Previous</button>
+            <button type="button" class="btn btn-outline-secondary grid-next">Next</button>
+        </div>
+    </nav>
+</div>

@@ -16,17 +16,15 @@ namespace PropertyManagement.Web.Controllers;
 [Authorize]
 [Route("Applications")]
 public class ApplicationsController(
-    IApplicationQueryService queryService,
     IApplicationService applicationService,
     UserManager<ApplicationUser> userManager,
     AppDbContext db) : Controller
 {
+    // Row data for this list now comes from the Bonus 1 grid (Features/10) fetching
+    // /api/applications client-side — this action only builds the filter dropdowns.
     [HttpGet("")]
     public async Task<IActionResult> Index(ApplicationStatus? status, int? propertyId, CancellationToken ct)
     {
-        var userId = userManager.GetUserId(User)!;
-        var isApplicant = User.IsInRole("Applicant");
-
         var vm = new ApplicationListFilterViewModel
         {
             Status = status,
@@ -39,7 +37,6 @@ public class ApplicationsController(
                 .OrderBy(p => p.Name)
                 .Select(p => new SelectListItem(p.Name, p.Id.ToString()))
                 .ToListAsync(ct),
-            Rows = await BuildRowsAsync(userId, isApplicant, status, propertyId, ct),
         };
 
         return View(vm);
@@ -322,6 +319,7 @@ public class ApplicationsController(
             ApplicationId = application.Id,
             CurrentStep = step,
             IsEditable = application.Status.IsEditable(),
+            IsWithdrawable = !application.Status.IsTerminal(),
             Status = application.Status.ToString(),
             ApplicantInformation = applicantInfoOverride ?? MapApplicantInfo(application.ApplicantInfo),
         };
@@ -374,21 +372,4 @@ public class ApplicationsController(
 
     private static ResidenceInput ToInput(ResidenceFormViewModel model) =>
         new(model.AddressLine1, model.AddressLine2, model.City, model.State, model.ZipCode, model.LandlordName, model.LandlordPhone, model.MoveInDate, model.MoveOutDate);
-
-    private async Task<List<ApplicationListRowViewModel>> BuildRowsAsync(
-        string userId, bool isApplicant, ApplicationStatus? status, int? propertyId, CancellationToken ct) =>
-        await queryService.BuildQuery(userId, isApplicant, status, propertyId)
-            .OrderByDescending(a => a.CreatedAtUtc)
-            .Select(a => new ApplicationListRowViewModel
-            {
-                Id = a.Id,
-                PropertyName = a.Unit.Property.Name,
-                UnitNumber = a.Unit.UnitNumber,
-                Status = a.Status.ToString(),
-                ApplicantName = a.ApplicantInfo != null ? a.ApplicantInfo.FullName : null,
-                LastUpdatedAtUtc = a.StatusHistory.Any() ? a.StatusHistory.Max(h => h.Timestamp) : a.CreatedAtUtc,
-                IsWithdrawable = !ApplicationStatusRules.TerminalStatuses.Contains(a.Status),
-            })
-            .AsNoTracking()
-            .ToListAsync(ct);
 }

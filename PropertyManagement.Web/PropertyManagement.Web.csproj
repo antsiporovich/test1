@@ -13,6 +13,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>61d20a57-b18a-4c87-9176-6481f5c33d3b</UserSecretsId>
+    <!-- Lets Microsoft.AspNetCore.OpenApi pick up XML doc comments for the Bonus 1 endpoint (GRID-4). -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
 </Project>

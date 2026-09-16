@@ -10,5 +10,4 @@ public class ApplicationListFilterViewModel
 
     public List<SelectListItem> StatusOptions { get; set; } = [];
     public List<SelectListItem> PropertyOptions { get; set; } = [];
-    public List<ApplicationListRowViewModel> Rows { get; set; } = [];
 }

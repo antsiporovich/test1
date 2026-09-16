@@ -7,6 +7,7 @@ public class ApplicationWizardViewModel
     public int ApplicationId { get; set; }
     public WizardStep CurrentStep { get; set; }
     public bool IsEditable { get; set; }
+    public bool IsWithdrawable { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? ReturnComment { get; set; }
     public string? SubmitError { get; set; }

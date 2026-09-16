@@ -1,6 +1,47 @@
 @model PropertyManagement.Web.Models.ApplicationListFilterViewModel
+@using PropertyManagement.Web.Models
 @{
     ViewData["Title"] = "Applications";
+    var isApplicant = User.IsInRole("Applicant");
+
+    var columns = new List<GridColumn>();
+    if (!isApplicant)
+    {
+        columns.Add(new GridColumn("applicant", "Applicant"));
+    }
+    columns.Add(new GridColumn("property", "Property / Unit"));
+    columns.Add(new GridColumn("status", "Status"));
+    columns.Add(new GridColumn("updated", "Last updated", Type: "date"));
+
+    var fixedParams = new Dictionary<string, string>();
+    if (Model.Status is not null)
+    {
+        fixedParams["status"] = Model.Status.ToString()!;
+    }
+    if (Model.PropertyId is not null)
+    {
+        fixedParams["propertyId"] = Model.PropertyId.ToString()!;
+    }
+
+    // A non-numeric placeholder here would fail the {id:int} route constraint during
+    // generation and silently fall back to the conventional /Applications/Wizard/{id}
+    // route instead of the real attribute-routed /Applications/{id} — use a valid int
+    // (0) and trim the trailing segment instead of substituting into it.
+    string? rowUrlTemplate = null;
+    if (isApplicant)
+    {
+        var sampleUrl = Url.Action("Wizard", "Applications", new { id = 0 })!;
+        rowUrlTemplate = sampleUrl[..sampleUrl.LastIndexOf('/')] + "/{id}";
+    }
+
+    var gridVm = new GridViewModel
+    {
+        ApiEndpoint = Url.Content("~/api/applications"),
+        Columns = columns,
+        PageSize = 5, // small enough that the 10 seeded applications actually demonstrate paging
+        FixedParams = fixedParams,
+        RowUrlTemplate = rowUrlTemplate,
+    };
 }
 
 <h1>Applications</h1>
@@ -21,4 +62,4 @@
     </div>
 </form>
 
-<partial name="_ApplicationList" model="Model.Rows" />
+@await Component.InvokeAsync("Grid", new { model = gridVm })
