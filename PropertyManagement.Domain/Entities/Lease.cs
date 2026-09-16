@@ -15,4 +15,14 @@ public class Lease
     public DateOnly EndDate { get; set; }
 
     public DateTimeOffset CreatedAtUtc { get; set; }
+
+    /// <summary>12-month term, inclusive end (matches LeaseAvailabilityRules' `&lt;=` on both ends).</summary>
+    public static Lease Create(int unitId, int applicationId, DateOnly startDate, DateTimeOffset createdAtUtc) => new()
+    {
+        UnitId = unitId,
+        ApplicationId = applicationId,
+        StartDate = startDate,
+        EndDate = startDate.AddMonths(12),
+        CreatedAtUtc = createdAtUtc,
+    };
 }

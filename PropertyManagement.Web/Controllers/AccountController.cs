@@ -129,7 +129,6 @@ public class AccountController(
 
     private IActionResult RedirectToRoleHome()
     {
-        // Unit browsing (Applicant) lands in Epic 3; Applicants still go to Home until then.
         // HttpContext.User reflects the just-established principal synchronously after
         // SignInAsync/PasswordSignInAsync within the same request, so this is safe here.
         if (User.IsInRole("PropertyManager"))
@@ -137,6 +136,6 @@ public class AccountController(
             return RedirectToAction(nameof(PropertiesController.Index), "Properties");
         }
 
-        return RedirectToAction(nameof(HomeController.Index), "Home");
+        return RedirectToAction(nameof(BrowseController.Index), "Browse");
     }
 }

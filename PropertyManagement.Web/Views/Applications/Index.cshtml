@@ -1,0 +1,24 @@
+@model PropertyManagement.Web.Models.ApplicationListFilterViewModel
+@{
+    ViewData["Title"] = "Applications";
+}
+
+<h1>Applications</h1>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+        <select asp-for="Status" asp-items="Model.StatusOptions" class="form-select">
+            <option value="">All statuses</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <select asp-for="PropertyId" asp-items="Model.PropertyOptions" class="form-select">
+            <option value="">All properties</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-secondary">Filter</button>
+    </div>
+</form>
+
+<partial name="_ApplicationList" model="Model.Rows" />

@@ -35,6 +35,8 @@ builder.Services.AddScoped<DbSeeder>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IPropertyService, PropertyService>();
 builder.Services.AddScoped<IUnitService, UnitService>();
+builder.Services.AddScoped<IApplicationQueryService, ApplicationQueryService>();
+builder.Services.AddScoped<IUnitBrowseService, UnitBrowseService>();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddOpenApi();
