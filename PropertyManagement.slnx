@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="PropertyManagement.Domain/PropertyManagement.Domain.csproj" />
+  <Project Path="PropertyManagement.Infrastructure/PropertyManagement.Infrastructure.csproj" />
+  <Project Path="PropertyManagement.Tests/PropertyManagement.Tests.csproj" />
+  <Project Path="PropertyManagement.Web/PropertyManagement.Web.csproj" />
+</Solution>
