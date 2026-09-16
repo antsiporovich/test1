@@ -56,3 +56,10 @@
         }
     </div>
 </div>
+
+<div class="card mb-3">
+    <div class="card-header">Co-Applicants</div>
+    <div class="card-body" id="coApplicantsRegion">
+        @await Component.InvokeAsync("CoApplicantsSection", new { applicationId = Model.ApplicationId, isEditable = Model.IsEditable })
+    </div>
+</div>

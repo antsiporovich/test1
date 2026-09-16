@@ -3,30 +3,40 @@ using PropertyManagement.Domain.Entities;
 
 namespace PropertyManagement.Infrastructure.Services;
 
-public record ApplicantInfoInput(string FullName, string Phone, string Email, string AddressLine1, string? AddressLine2, string City, string State, string ZipCode);
+public record ApplicantInfoInput(string FullName, string Phone, string Email, string AddressLine1, string? AddressLine2, string City, string State, string ZipCode, byte[] RowVersion);
 
-public record ResidenceInput(string AddressLine1, string? AddressLine2, string City, string State, string ZipCode, string LandlordName, string LandlordPhone, DateOnly MoveInDate, DateOnly? MoveOutDate);
+public record ResidenceInput(string AddressLine1, string? AddressLine2, string City, string State, string ZipCode, string LandlordName, string LandlordPhone, DateOnly MoveInDate, DateOnly? MoveOutDate, byte[] RowVersion);
 
 /// <summary>
 /// All operations take an already-loaded, ownership-checked <see cref="Application"/>
 /// (and, for residences, an already-resolved <see cref="Residence"/> under it) — the
 /// controller does the "find + authorize" (per aspnet-identity-authorization.md's
-/// "simple approach"), this service does the mutation. Section-save and residence-CRUD
-/// methods have no DB-dependent failure mode once the caller is authorized, so they
-/// return the mutated entity directly rather than a ServiceResult; Submit/Withdraw carry
-/// real business-rule failures and return ServiceResult.
+/// "simple approach"), this service does the mutation. Residence-create and remove have
+/// no DB-dependent failure mode once the caller is authorized, so they act directly;
+/// every other mutation below carries a real failure mode (concurrency conflict or
+/// business-rule rejection) and returns a <see cref="ServiceResult{T}"/>.
 /// </summary>
 public interface IApplicationService
 {
-    Task SaveApplicantInfoAsync(Application application, ApplicantInfoInput input, CancellationToken ct = default);
+    /// <summary>MULTI-4: <paramref name="input"/>'s RowVersion is checked as the EF
+    /// original value; a concurrent save since it was loaded rejects this one rather
+    /// than overwriting it (never last-write-wins).</summary>
+    Task<ServiceResult<bool>> SaveApplicantInfoAsync(Application application, ApplicantInfoInput input, CancellationToken ct = default);
 
     Task ConfirmResidenceHistoryAsync(Application application, CancellationToken ct = default);
 
     Task<Residence> AddResidenceAsync(Application application, ResidenceInput input, CancellationToken ct = default);
 
-    Task UpdateResidenceAsync(Residence residence, ResidenceInput input, CancellationToken ct = default);
+    /// <summary>MULTI-4: same concurrency check as <see cref="SaveApplicantInfoAsync"/>.</summary>
+    Task<ServiceResult<bool>> UpdateResidenceAsync(Residence residence, ResidenceInput input, CancellationToken ct = default);
 
     Task RemoveResidenceAsync(Residence residence, CancellationToken ct = default);
+
+    /// <summary>MULTI-1: adds a registered Applicant (matched by email, case-insensitive)
+    /// to the application's applicant set. Fails if no such Applicant account exists or
+    /// they're already on this application; the unique (ApplicationId, UserId) index is
+    /// the DB-level backstop.</summary>
+    Task<ServiceResult<bool>> AddApplicantAsync(Application application, string email, CancellationToken ct = default);
 
     /// <summary>LIFE-1: gated on no outstanding validation issues (Features/13, VALID-3)
     /// and no active lease on the unit.</summary>

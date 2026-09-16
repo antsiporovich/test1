@@ -1,0 +1,27 @@
+@model PropertyManagement.Web.Models.CoApplicantsListViewModel
+
+@if (Model.IsEditable)
+{
+    <div class="d-flex justify-content-end mb-2">
+        <button type="button" class="btn btn-sm btn-primary"
+                data-ajax-modal-url="@Url.Action("AddApplicantForm", "Applications", new { applicationId = Model.ApplicationId })"
+                data-refresh-url="@Url.Action("CoApplicantsPartial", "Applications", new { applicationId = Model.ApplicationId })"
+                data-refresh-target="#coApplicantsRegion">
+            Add Co-Applicant
+        </button>
+    </div>
+}
+
+@if (Model.Applicants.Count == 0)
+{
+    <p class="text-muted mb-0">No co-applicants yet.</p>
+}
+else
+{
+    <ul class="list-group list-group-flush">
+        @foreach (var a in Model.Applicants)
+        {
+            <li class="list-group-item">@a.DisplayName (@a.Email)</li>
+        }
+    </ul>
+}

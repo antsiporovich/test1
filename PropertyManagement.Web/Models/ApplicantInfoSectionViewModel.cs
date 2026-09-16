@@ -4,6 +4,11 @@ namespace PropertyManagement.Web.Models;
 
 public class ApplicantInfoSectionViewModel
 {
+    /// <summary>MULTI-4: round-tripped from the loaded entity; checked as the EF
+    /// original value on save so a concurrent edit is rejected, not overwritten.
+    /// Empty for a section that has never been saved (nothing to conflict with).</summary>
+    public byte[] RowVersion { get; set; } = [];
+
     [Required]
     [StringLength(200)]
     [Display(Name = "Full name")]

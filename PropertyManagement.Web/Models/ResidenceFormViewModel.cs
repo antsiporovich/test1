@@ -7,6 +7,10 @@ public class ResidenceFormViewModel : IValidatableObject
     public int Id { get; set; }
     public int ApplicationId { get; set; }
 
+    /// <summary>MULTI-4: round-tripped from the loaded entity; checked as the EF
+    /// original value on save so a concurrent edit is rejected, not overwritten.</summary>
+    public byte[] RowVersion { get; set; } = [];
+
     [Required]
     [StringLength(200)]
     [Display(Name = "Address")]

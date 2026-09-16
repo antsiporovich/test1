@@ -10,16 +10,17 @@ namespace PropertyManagement.Infrastructure.Services;
 
 public class ApplicationService(AppDbContext db, TimeProvider timeProvider) : IApplicationService
 {
-    public async Task SaveApplicantInfoAsync(Application application, ApplicantInfoInput input, CancellationToken ct = default)
+    public async Task<ServiceResult<bool>> SaveApplicantInfoAsync(Application application, ApplicantInfoInput input, CancellationToken ct = default)
     {
         var now = timeProvider.GetUtcNow();
-        if (application.ApplicantInfo is null)
+        var isNew = application.ApplicantInfo is null;
+        if (isNew)
         {
             application.ApplicantInfo = new ApplicantInfo { ApplicationId = application.Id };
             db.ApplicantInfos.Add(application.ApplicantInfo);
         }
 
-        var info = application.ApplicantInfo;
+        var info = application.ApplicantInfo!;
         info.FullName = input.FullName;
         info.Phone = input.Phone;
         info.Email = input.Email;
@@ -30,7 +31,14 @@ public class ApplicationService(AppDbContext db, TimeProvider timeProvider) : IA
         info.ZipCode = input.ZipCode;
         info.UpdatedAtUtc = now;
 
-        await db.SaveChangesAsync(ct);
+        // MULTI-4: a brand-new row has no prior version to conflict with; only an
+        // existing row's WHERE clause needs the loaded RowVersion as the original value.
+        if (!isNew)
+        {
+            db.Entry(info).Property(e => e.RowVersion).OriginalValue = input.RowVersion;
+        }
+
+        return await SaveWithConcurrencyCheckAsync(ct);
     }
 
     public async Task ConfirmResidenceHistoryAsync(Application application, CancellationToken ct = default)
@@ -48,16 +56,48 @@ public class ApplicationService(AppDbContext db, TimeProvider timeProvider) : IA
         return residence;
     }
 
-    public async Task UpdateResidenceAsync(Residence residence, ResidenceInput input, CancellationToken ct = default)
+    public async Task<ServiceResult<bool>> UpdateResidenceAsync(Residence residence, ResidenceInput input, CancellationToken ct = default)
     {
         ApplyResidenceInput(residence, input);
-        await db.SaveChangesAsync(ct);
+        db.Entry(residence).Property(e => e.RowVersion).OriginalValue = input.RowVersion;
+        return await SaveWithConcurrencyCheckAsync(ct);
     }
 
     public async Task RemoveResidenceAsync(Residence residence, CancellationToken ct = default)
     {
         db.Residences.Remove(residence);
         await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<ServiceResult<bool>> AddApplicantAsync(Application application, string email, CancellationToken ct = default)
+    {
+        var normalizedEmail = email.Trim().ToUpperInvariant();
+        var user = await db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, ct);
+        var isApplicant = user is not null && await (
+            from ur in db.UserRoles
+            join r in db.Roles on ur.RoleId equals r.Id
+            where ur.UserId == user.Id && r.Name == "Applicant"
+            select ur).AnyAsync(ct);
+
+        if (user is null || !isApplicant)
+        {
+            return ServiceResult<bool>.Fail("Email", "No Applicant account found with that email.");
+        }
+
+        if (application.Applicants.Any(a => a.UserId == user.Id))
+        {
+            return ServiceResult<bool>.Fail("Email", "This person is already on the application.");
+        }
+
+        application.Applicants.Add(new ApplicationApplicant
+        {
+            ApplicationId = application.Id,
+            UserId = user.Id,
+            AddedAtUtc = timeProvider.GetUtcNow(),
+        });
+
+        await db.SaveChangesAsync(ct);
+        return ServiceResult<bool>.Success(true);
     }
 
     public async Task<ServiceResult<bool>> SubmitAsync(Application application, string actorUserId, CancellationToken ct = default)
@@ -184,6 +224,21 @@ public class ApplicationService(AppDbContext db, TimeProvider timeProvider) : IA
         await transaction.CommitAsync(ct);
 
         return ServiceResult<bool>.Success(true);
+    }
+
+    private const string ConcurrencyErrorMessage = "This section was changed since you loaded it — please reload and try again.";
+
+    private async Task<ServiceResult<bool>> SaveWithConcurrencyCheckAsync(CancellationToken ct)
+    {
+        try
+        {
+            await db.SaveChangesAsync(ct);
+            return ServiceResult<bool>.Success(true);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return ServiceResult<bool>.Fail(string.Empty, ConcurrencyErrorMessage);
+        }
     }
 
     private static void ApplyResidenceInput(Residence residence, ResidenceInput input)

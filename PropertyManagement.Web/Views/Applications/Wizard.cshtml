@@ -20,6 +20,11 @@
     <div class="alert alert-danger">@Model.SubmitError</div>
 }
 
+@if (Model.ConcurrencyError is not null)
+{
+    <div class="alert alert-warning">@Model.ConcurrencyError</div>
+}
+
 <form id="wizardForm" method="post" asp-controller="Applications" asp-action="Wizard" asp-route-id="@Model.ApplicationId">
     @Html.AntiForgeryToken()
     <input type="hidden" asp-for="CurrentStep" />

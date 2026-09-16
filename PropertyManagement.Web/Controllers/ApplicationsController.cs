@@ -111,8 +111,21 @@ public class ApplicationsController(
             case "Continue" when model.CurrentStep == WizardStep.ApplicantInformation:
                 // VALID-1: persists as-is and always advances, even with outstanding
                 // validation issues — Summary lists them, Submit blocks on them.
-                await applicationService.SaveApplicantInfoAsync(application, ToInput(model.ApplicantInformation), ct);
+                var saveResult = await applicationService.SaveApplicantInfoAsync(application, ToInput(model.ApplicantInformation), ct);
                 ModelState.Clear();
+                if (!saveResult.Succeeded)
+                {
+                    // MULTI-4: a co-applicant saved this section first. The failed
+                    // SaveChangesAsync left ApplicantInfo's in-memory properties as our
+                    // rejected edit — EF's identity map means even a fresh re-query would
+                    // just hand back this same tracked (stale) instance, so reload it from
+                    // the store explicitly to show their latest saved data, never ours.
+                    await db.Entry(application.ApplicantInfo!).ReloadAsync(ct);
+                    var conflictVm = await BuildWizardViewModelAsync(application, WizardStep.ApplicantInformation, ct);
+                    conflictVm.ConcurrencyError = saveResult.Errors.Values.SelectMany(e => e).FirstOrDefault();
+                    return View("Wizard", conflictVm);
+                }
+
                 return View("Wizard", await BuildWizardViewModelAsync(application, WizardStep.ResidenceHistory, ct));
 
             case "Continue" when model.CurrentStep == WizardStep.ResidenceHistory:
@@ -155,6 +168,77 @@ public class ApplicationsController(
         }
 
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet("{applicationId:int}/Applicants/Add")]
+    [Authorize(Roles = "Applicant")]
+    public async Task<IActionResult> AddApplicantForm(int applicationId, CancellationToken ct)
+    {
+        var application = await LoadOwnedApplicationAsync(applicationId, ct);
+        if (application is null)
+        {
+            return NotFound();
+        }
+
+        if (!application.Status.IsEditable())
+        {
+            return Forbid();
+        }
+
+        return PartialView("_CoApplicantForm", new AddApplicantFormViewModel { ApplicationId = applicationId });
+    }
+
+    [HttpPost("{applicationId:int}/Applicants/Add")]
+    [Authorize(Roles = "Applicant")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddApplicant(int applicationId, AddApplicantFormViewModel model, CancellationToken ct)
+    {
+        model.ApplicationId = applicationId;
+
+        var application = await LoadOwnedApplicationAsync(applicationId, ct);
+        if (application is null)
+        {
+            return NotFound();
+        }
+
+        if (!application.Status.IsEditable())
+        {
+            return Forbid();
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return PartialView("_CoApplicantForm", model);
+        }
+
+        var result = await applicationService.AddApplicantAsync(application, model.Email, ct);
+        if (!result.Succeeded)
+        {
+            foreach (var (field, messages) in result.Errors)
+            {
+                foreach (var message in messages)
+                {
+                    ModelState.AddModelError(field, message);
+                }
+            }
+
+            return PartialView("_CoApplicantForm", model);
+        }
+
+        return Json(new { success = true });
+    }
+
+    [HttpGet("{applicationId:int}/Applicants/ListPartial")]
+    [Authorize(Roles = "Applicant")]
+    public async Task<IActionResult> CoApplicantsPartial(int applicationId, CancellationToken ct)
+    {
+        var application = await LoadOwnedApplicationAsync(applicationId, ct);
+        if (application is null)
+        {
+            return NotFound();
+        }
+
+        return ViewComponent("CoApplicantsSection", new { applicationId, isEditable = application.Status.IsEditable() });
     }
 
     [HttpPost("{id:int}/Claim")]
@@ -267,21 +351,7 @@ public class ApplicationsController(
             return NotFound();
         }
 
-        var model = new ResidenceFormViewModel
-        {
-            Id = residence.Id,
-            ApplicationId = applicationId,
-            AddressLine1 = residence.AddressLine1,
-            AddressLine2 = residence.AddressLine2,
-            City = residence.City,
-            State = residence.State,
-            ZipCode = residence.ZipCode,
-            LandlordName = residence.LandlordName,
-            LandlordPhone = residence.LandlordPhone,
-            MoveInDate = residence.MoveInDate,
-            MoveOutDate = residence.MoveOutDate,
-        };
-        return PartialView("_ResidenceForm", model);
+        return PartialView("_ResidenceForm", MapResidence(residence, applicationId));
     }
 
     [HttpPost("{applicationId:int}/Residences/{residenceId:int}/Edit")]
@@ -314,7 +384,17 @@ public class ApplicationsController(
             return PartialView("_ResidenceForm", model);
         }
 
-        await applicationService.UpdateResidenceAsync(residence, ToInput(model), ct);
+        var updateResult = await applicationService.UpdateResidenceAsync(residence, ToInput(model), ct);
+        if (!updateResult.Succeeded)
+        {
+            // MULTI-4: re-render the modal with the co-applicant's latest saved data
+            // (not this user's rejected edit) plus the "reload" message.
+            ModelState.Clear();
+            var fresh = await db.Residences.AsNoTracking().FirstOrDefaultAsync(r => r.Id == residenceId, ct);
+            ModelState.AddModelError(string.Empty, updateResult.Errors.Values.SelectMany(e => e).FirstOrDefault() ?? "Could not save.");
+            return PartialView("_ResidenceForm", fresh is null ? model : MapResidence(fresh, applicationId));
+        }
+
         return Json(new { success = true });
     }
 
@@ -436,15 +516,32 @@ public class ApplicationsController(
             City = info.City,
             State = info.State,
             ZipCode = info.ZipCode,
+            RowVersion = info.RowVersion,
         };
+
+    private static ResidenceFormViewModel MapResidence(Residence residence, int applicationId) => new()
+    {
+        Id = residence.Id,
+        ApplicationId = applicationId,
+        AddressLine1 = residence.AddressLine1,
+        AddressLine2 = residence.AddressLine2,
+        City = residence.City,
+        State = residence.State,
+        ZipCode = residence.ZipCode,
+        LandlordName = residence.LandlordName,
+        LandlordPhone = residence.LandlordPhone,
+        MoveInDate = residence.MoveInDate,
+        MoveOutDate = residence.MoveOutDate,
+        RowVersion = residence.RowVersion,
+    };
 
     // An empty posted form field binds a `string` property to null, not "" (that's how
     // [Required] catches "posted but blank"). VALID-1 now persists this section even
     // when invalid, so a blank field must still land as "" in the NOT NULL columns
     // below, not a runtime null the compile-time non-nullable annotations don't catch.
     private static ApplicantInfoInput ToInput(ApplicantInfoSectionViewModel model) =>
-        new(model.FullName ?? "", model.Phone ?? "", model.Email ?? "", model.AddressLine1 ?? "", model.AddressLine2, model.City ?? "", model.State ?? "", model.ZipCode ?? "");
+        new(model.FullName ?? "", model.Phone ?? "", model.Email ?? "", model.AddressLine1 ?? "", model.AddressLine2, model.City ?? "", model.State ?? "", model.ZipCode ?? "", model.RowVersion);
 
     private static ResidenceInput ToInput(ResidenceFormViewModel model) =>
-        new(model.AddressLine1, model.AddressLine2, model.City, model.State, model.ZipCode, model.LandlordName, model.LandlordPhone, model.MoveInDate, model.MoveOutDate);
+        new(model.AddressLine1, model.AddressLine2, model.City, model.State, model.ZipCode, model.LandlordName, model.LandlordPhone, model.MoveInDate, model.MoveOutDate, model.RowVersion);
 }

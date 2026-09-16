@@ -13,6 +13,10 @@ public class ApplicationWizardViewModel
     public string? ReturnComment { get; set; }
     public string? SubmitError { get; set; }
 
+    /// <summary>MULTI-4: set when a section save is rejected as stale; the re-rendered
+    /// section shows the co-applicant's latest saved data, not this user's lost edit.</summary>
+    public string? ConcurrencyError { get; set; }
+
     public ApplicantInfoSectionViewModel ApplicantInformation { get; set; } = new();
 
     /// <summary>Populated only for the Summary step's read-only recap.</summary>
