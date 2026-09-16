@@ -129,8 +129,14 @@ public class AccountController(
 
     private IActionResult RedirectToRoleHome()
     {
-        // Unit browsing (Applicant) and the property list (PropertyManager) land in
-        // Epic 2/3; both roles go to Home until those pages exist.
+        // Unit browsing (Applicant) lands in Epic 3; Applicants still go to Home until then.
+        // HttpContext.User reflects the just-established principal synchronously after
+        // SignInAsync/PasswordSignInAsync within the same request, so this is safe here.
+        if (User.IsInRole("PropertyManager"))
+        {
+            return RedirectToAction(nameof(PropertiesController.Index), "Properties");
+        }
+
         return RedirectToAction(nameof(HomeController.Index), "Home");
     }
 }

@@ -1,0 +1,57 @@
+@model PropertyManagement.Web.Models.UnitListViewModel
+
+@if (Model.Units.Count == 0)
+{
+    <p class="text-muted small mb-0">No units yet.</p>
+}
+else
+{
+    <table class="table table-sm align-middle mb-0">
+        <thead>
+            <tr>
+                <th>Unit #</th>
+                <th>Bedrooms</th>
+                <th>Rent</th>
+                <th>Type</th>
+                <th>Availability</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var unit in Model.Units)
+            {
+                <tr>
+                    <td>@unit.UnitNumber</td>
+                    <td>@unit.Bedrooms</td>
+                    <td>@unit.MonthlyRent.ToString("C")</td>
+                    <td>@unit.UnitTypeName</td>
+                    <td>
+                        @if (unit.IsAvailable)
+                        {
+                            <span class="badge text-bg-success">Available</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-secondary">Unavailable</span>
+                        }
+                    </td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                data-ajax-modal-url="@Url.Action("EditForm", "Units", new { propertyId = unit.PropertyId, unitId = unit.Id })"
+                                data-refresh-url="@Url.Action("UnitsPartial", "Units", new { propertyId = unit.PropertyId })"
+                                data-refresh-target="#unitListRegion-@unit.PropertyId">
+                            Edit
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                data-ajax-remove-url="@Url.Action("Remove", "Units", new { propertyId = unit.PropertyId, unitId = unit.Id })"
+                                data-confirm="Remove unit @unit.UnitNumber?"
+                                data-refresh-url="@Url.Action("UnitsPartial", "Units", new { propertyId = unit.PropertyId })"
+                                data-refresh-target="#unitListRegion-@unit.PropertyId">
+                            Remove
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

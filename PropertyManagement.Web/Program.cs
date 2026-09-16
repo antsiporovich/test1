@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PropertyManagement.Infrastructure.Data;
 using PropertyManagement.Infrastructure.Data.Seed;
 using PropertyManagement.Infrastructure.Identity;
+using PropertyManagement.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +32,9 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddScoped<DbSeeder>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<IPropertyService, PropertyService>();
+builder.Services.AddScoped<IUnitService, UnitService>();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddOpenApi();

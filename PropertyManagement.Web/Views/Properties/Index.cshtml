@@ -1,0 +1,24 @@
+@model List<PropertyManagement.Web.Models.PropertyRowViewModel>
+@{
+    ViewData["Title"] = "Properties";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Properties</h1>
+    <button type="button" class="btn btn-primary"
+            data-ajax-modal-url="@Url.Action("CreateForm")"
+            data-refresh-url="@Url.Action("ListPartial")"
+            data-refresh-target="#propertyListRegion">
+        Add Property
+    </button>
+</div>
+
+<div id="propertyListRegion">
+    <partial name="_PropertyList" model="Model" />
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
