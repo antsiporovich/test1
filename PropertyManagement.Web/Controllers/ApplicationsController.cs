@@ -10,6 +10,7 @@ using PropertyManagement.Domain.Validation;
 using PropertyManagement.Infrastructure.Data;
 using PropertyManagement.Infrastructure.Identity;
 using PropertyManagement.Infrastructure.Services;
+using PropertyManagement.Domain.Common;
 using PropertyManagement.Web.Models;
 
 namespace PropertyManagement.Web.Controllers;
@@ -437,6 +438,70 @@ public class ApplicationsController(
         return ViewComponent("ResidenceHistorySection", new { applicationId, isEditable = application.Status.IsEditable() });
     }
 
+    // ── PM Detail & Review ────────────────────────────────────────────────────
+
+    /// <summary>REVIEW-1/REVIEW-5: PM read-only detail of any application, with
+    /// full status/review history and a Review modal trigger.</summary>
+    [HttpGet("{id:int}/Detail")]
+    [Authorize(Roles = "PropertyManager")]
+    public async Task<IActionResult> Detail(int id, CancellationToken ct)
+    {
+        var application = await LoadApplicationForPmAsync(id, ct);
+        if (application is null) return NotFound();
+
+        var vm = await BuildDetailViewModelAsync(application, ct);
+        return View(vm);
+    }
+
+    [HttpGet("{id:int}/Review")]
+    [Authorize(Roles = "PropertyManager")]
+    public async Task<IActionResult> ReviewForm(int id, CancellationToken ct)
+    {
+        var application = await LoadApplicationForPmAsync(id, ct);
+        if (application is null) return NotFound();
+
+        if (!CanCurrentPmReview(application)) return Forbid();
+
+        return PartialView("_ReviewForm", new ReviewFormViewModel { ApplicationId = id });
+    }
+
+    [HttpPost("{id:int}/Review")]
+    [Authorize(Roles = "PropertyManager")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Review(int id, ReviewFormViewModel model, CancellationToken ct)
+    {
+        model.ApplicationId = id;
+
+        var application = await LoadApplicationForPmAsync(id, ct);
+        if (application is null) return NotFound();
+
+        if (!CanCurrentPmReview(application)) return Forbid();
+
+        if (!ModelState.IsValid)
+            return PartialView("_ReviewForm", model);
+
+        var actorId = userManager.GetUserId(User)!;
+        ServiceResult<bool> result = model.Outcome switch
+        {
+            ReviewOutcome.Approve => await applicationService.ApproveAsync(application, actorId, model.Comment, ct),
+            ReviewOutcome.Return  => await applicationService.ReturnToApplicantAsync(application, actorId, model.Comment!, ct),
+            ReviewOutcome.Deny    => await applicationService.DenyAsync(application, actorId, model.Comment!, ct),
+            _                     => ServiceResult<bool>.Fail(string.Empty, "Invalid outcome."),
+        };
+
+        if (!result.Succeeded)
+        {
+            ModelState.AddModelError(string.Empty, result.Errors.Values.SelectMany(e => e).FirstOrDefault() ?? "Review could not be completed.");
+            return PartialView("_ReviewForm", model);
+        }
+
+        // ajaxModal.js: on data.redirect present, closes the modal and navigates there
+        // instead of calling refreshRegion — correct for a whole-page status change.
+        return Json(new { success = true, redirect = Url.Action(nameof(Detail), new { id }) });
+    }
+
+    // ── Applicant-side loaders & helpers ─────────────────────────────────────
+
     private async Task<Application?> LoadOwnedApplicationAsync(int id, CancellationToken ct)
     {
         var userId = userManager.GetUserId(User)!;
@@ -448,6 +513,77 @@ public class ApplicationsController(
             .Include(a => a.StatusHistory)
             .OwnedBy(userId)
             .FirstOrDefaultAsync(a => a.Id == id, ct);
+    }
+
+    /// <summary>PM-side load — no ownership filter; PMs may view any application.</summary>
+    private async Task<Application?> LoadApplicationForPmAsync(int id, CancellationToken ct) =>
+        await db.Applications
+            .Include(a => a.Unit).ThenInclude(u => u.Property)
+            .Include(a => a.ApplicantInfo)
+            .Include(a => a.Residences)
+            .Include(a => a.Applicants)
+            .Include(a => a.StatusHistory)
+            .FirstOrDefaultAsync(a => a.Id == id, ct);
+
+    /// <summary>REVIEW-1: only the submitting PM (Submitted) or the claiming PM
+    /// (UnderReview + claimedBy == me) may complete a review.</summary>
+    private bool CanCurrentPmReview(Application application)
+    {
+        var userId = userManager.GetUserId(User)!;
+        return application.Status == ApplicationStatus.Submitted
+            || (application.Status == ApplicationStatus.UnderReview && application.ClaimedByUserId == userId);
+    }
+
+    private async Task<ApplicationDetailViewModel> BuildDetailViewModelAsync(Application application, CancellationToken ct)
+    {
+        // Resolve actor display names for the history table in one DB round-trip.
+        var actorIds = application.StatusHistory.Select(h => h.ActorUserId).Distinct().ToList();
+        var actorNames = await db.Users
+            .Where(u => actorIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.DisplayName ?? u.UserName ?? u.Id, ct);
+
+        // Collect applicant display names for the header.
+        var applicantUserIds = application.Applicants.Select(a => a.UserId).ToList();
+        var applicantNames = await db.Users
+            .Where(u => applicantUserIds.Contains(u.Id))
+            .Select(u => u.DisplayName ?? u.Email ?? u.Id)
+            .ToListAsync(ct);
+
+        return new ApplicationDetailViewModel
+        {
+            Id = application.Id,
+            PropertyUnit = $"{application.Unit.Property.Name} — Unit {application.Unit.UnitNumber}",
+            ApplicantNames = applicantNames.Count > 0 ? string.Join(", ", applicantNames) : "—",
+            Status = application.Status.ToString(),
+            CanReview = CanCurrentPmReview(application),
+            ApplicantInformation = MapApplicantInfo(application.ApplicantInfo),
+            Residences = application.Residences
+                .OrderBy(r => r.MoveInDate)
+                .Select(r => new ResidenceRowViewModel
+                {
+                    Id = r.Id,
+                    AddressLine1 = r.AddressLine1,
+                    AddressLine2 = r.AddressLine2,
+                    City = r.City,
+                    State = r.State,
+                    ZipCode = r.ZipCode,
+                    LandlordName = r.LandlordName,
+                    LandlordPhone = r.LandlordPhone,
+                    MoveInDate = r.MoveInDate,
+                    MoveOutDate = r.MoveOutDate,
+                })
+                .ToList(),
+            StatusHistory = application.StatusHistory
+                .OrderBy(h => h.Timestamp)
+                .Select(h => new StatusHistoryRowViewModel
+                {
+                    ResultingStatus = h.ToStatus.ToString(),
+                    ActorName = actorNames.TryGetValue(h.ActorUserId, out var name) ? name : h.ActorUserId,
+                    Timestamp = h.Timestamp,
+                    Comment = h.Comment,
+                })
+                .ToList(),
+        };
     }
 
     private async Task<ApplicationWizardViewModel> BuildWizardViewModelAsync(

@@ -99,6 +99,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 return response.json().then(function (data) {
                     if (data.success) {
                         bsModal.hide();
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                            return;
+                        }
                         return refreshRegion(modalEl.dataset.refreshUrl, modalEl.dataset.refreshTarget);
                     }
                 });

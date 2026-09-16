@@ -226,6 +226,82 @@ public class ApplicationService(AppDbContext db, TimeProvider timeProvider) : IA
         return ServiceResult<bool>.Success(true);
     }
 
+    public async Task<ServiceResult<bool>> ApproveAsync(Application application, string actorUserId, string? comment, CancellationToken ct = default)
+    {
+        var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+
+        // REVIEW-2: same active-lease predicate as LIFE-1's submit guard (two call sites,
+        // one method — LeaseAvailabilityRules.CoveringDate). Prevents a second lease
+        // if another application for the same unit was approved between submission and now.
+        var hasActiveLease = await db.Leases
+            .Where(l => l.UnitId == application.UnitId)
+            .CoveringDate(today)
+            .AnyAsync(ct);
+
+        if (hasActiveLease)
+        {
+            return ServiceResult<bool>.Fail(string.Empty, "This unit already has an active lease. Approval is not possible.");
+        }
+
+        var now = timeProvider.GetUtcNow();
+
+        // LEASE-1: 12-month lease via the domain factory (StartDate = today, clock-free testable).
+        db.Leases.Add(Lease.Create(application.UnitId, application.Id, today, now));
+
+        application.StatusHistory.Add(new ApplicationStatusHistory
+        {
+            FromStatus = application.Status,
+            ToStatus = ApplicationStatus.Approved,
+            ActorUserId = actorUserId,
+            Timestamp = now,
+            Comment = comment,
+        });
+        application.Status = ApplicationStatus.Approved;
+
+        await db.SaveChangesAsync(ct);
+        return ServiceResult<bool>.Success(true);
+    }
+
+    public async Task<ServiceResult<bool>> ReturnToApplicantAsync(Application application, string actorUserId, string comment, CancellationToken ct = default)
+    {
+        var now = timeProvider.GetUtcNow();
+        application.StatusHistory.Add(new ApplicationStatusHistory
+        {
+            FromStatus = application.Status,
+            ToStatus = ApplicationStatus.Returned,
+            ActorUserId = actorUserId,
+            Timestamp = now,
+            Comment = comment,
+        });
+        application.Status = ApplicationStatus.Returned;
+        // Clear claim if previously Under Review (QUEUE-1 path).
+        application.ClaimedByUserId = null;
+        application.ClaimedAtUtc = null;
+
+        await db.SaveChangesAsync(ct);
+        return ServiceResult<bool>.Success(true);
+    }
+
+    public async Task<ServiceResult<bool>> DenyAsync(Application application, string actorUserId, string comment, CancellationToken ct = default)
+    {
+        var now = timeProvider.GetUtcNow();
+        application.StatusHistory.Add(new ApplicationStatusHistory
+        {
+            FromStatus = application.Status,
+            ToStatus = ApplicationStatus.Denied,
+            ActorUserId = actorUserId,
+            Timestamp = now,
+            Comment = comment,
+        });
+        application.Status = ApplicationStatus.Denied;
+        // Clear claim if previously Under Review.
+        application.ClaimedByUserId = null;
+        application.ClaimedAtUtc = null;
+
+        await db.SaveChangesAsync(ct);
+        return ServiceResult<bool>.Success(true);
+    }
+
     private const string ConcurrencyErrorMessage = "This section was changed since you loaded it — please reload and try again.";
 
     private async Task<ServiceResult<bool>> SaveWithConcurrencyCheckAsync(CancellationToken ct)

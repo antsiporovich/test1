@@ -26,12 +26,19 @@
     // A non-numeric placeholder here would fail the {id:int} route constraint during
     // generation and silently fall back to the conventional /Applications/Wizard/{id}
     // route instead of the real attribute-routed /Applications/{id} — use a valid int
-    // (0) and trim the trailing segment instead of substituting into it.
+    // (0) then replace it to get the {id} template the grid JS substitutes at run time.
     string? rowUrlTemplate = null;
     if (isApplicant)
     {
         var sampleUrl = Url.Action("Wizard", "Applications", new { id = 0 })!;
         rowUrlTemplate = sampleUrl[..sampleUrl.LastIndexOf('/')] + "/{id}";
+    }
+    else
+    {
+        // PM row-click → application detail (REVIEW-1).
+        // Route is /Applications/{id}/Detail; replace the literal 0 to get the template.
+        var sampleUrl = Url.Action("Detail", "Applications", new { id = 0 })!; // /Applications/0/Detail
+        rowUrlTemplate = sampleUrl.Replace("/0/", "/{id}/");
     }
 
     var gridVm = new GridViewModel
@@ -71,6 +78,8 @@
                     <td>@row.Status</td>
                     <td>@row.ClaimedByName</td>
                     <td class="text-end">
+                        <a asp-action="Detail" asp-route-id="@row.Id"
+                           class="btn btn-sm btn-outline-primary me-1">View</a>
                         @if (row.Status == ApplicationStatus.Submitted)
                         {
                             <form asp-action="Claim" asp-route-id="@row.Id" method="post" class="d-inline">

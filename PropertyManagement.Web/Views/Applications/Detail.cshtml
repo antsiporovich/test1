@@ -1,0 +1,136 @@
+@model PropertyManagement.Web.Models.ApplicationDetailViewModel
+@{
+    ViewData["Title"] = "Application Detail";
+}
+@Html.AntiForgeryToken()
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h1 class="h3">@Model.PropertyUnit</h1>
+        <p class="text-muted mb-0">
+            Applicant(s): <strong>@Model.ApplicantNames</strong>
+            &ensp;·&ensp;
+            Status: <span class="badge text-bg-secondary">@Model.Status</span>
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        @if (Model.CanReview)
+        {
+            <button type="button" class="btn btn-primary"
+                    data-ajax-modal-url="@Url.Action("ReviewForm", "Applications", new { id = Model.Id })">
+                Review Application
+            </button>
+        }
+        <a asp-action="Index" asp-controller="Applications" class="btn btn-outline-secondary">
+            ← Back to List
+        </a>
+    </div>
+</div>
+
+@* ── Applicant Information ────────────────────────────────────────────────── *@
+<div class="card mb-3">
+    <div class="card-header fw-semibold">Applicant Information</div>
+    <div class="card-body">
+        @if (Model.ApplicantInformation is null)
+        {
+            <p class="text-muted">Not yet completed.</p>
+        }
+        else
+        {
+            var info = Model.ApplicantInformation;
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Full Name</dt>
+                <dd class="col-sm-9">@info.FullName</dd>
+                <dt class="col-sm-3">Phone</dt>
+                <dd class="col-sm-9">@info.Phone</dd>
+                <dt class="col-sm-3">Email</dt>
+                <dd class="col-sm-9">@info.Email</dd>
+                <dt class="col-sm-3">Address</dt>
+                <dd class="col-sm-9">
+                    @info.AddressLine1
+                    @if (!string.IsNullOrEmpty(info.AddressLine2))
+                    {
+                        <span>, @info.AddressLine2</span>
+                    }
+                    , @info.City, @info.State @info.ZipCode
+                </dd>
+            </dl>
+        }
+    </div>
+</div>
+
+@* ── Residence History ────────────────────────────────────────────────────── *@
+<div class="card mb-3">
+    <div class="card-header fw-semibold">Residence History</div>
+    <div class="card-body p-0">
+        @if (!Model.Residences.Any())
+        {
+            <p class="text-muted p-3 mb-0">No prior residences listed.</p>
+        }
+        else
+        {
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Address</th>
+                        <th>Landlord</th>
+                        <th>Phone</th>
+                        <th>Move-in</th>
+                        <th>Move-out</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Residences)
+                    {
+                        <tr>
+                            <td>
+                                @r.AddressLine1
+                                @if (!string.IsNullOrEmpty(r.AddressLine2)) { <span>, @r.AddressLine2</span> }
+                                , @r.City, @r.State @r.ZipCode
+                            </td>
+                            <td>@r.LandlordName</td>
+                            <td>@r.LandlordPhone</td>
+                            <td>@r.MoveInDate.ToString("MMM d, yyyy")</td>
+                            <td>@(r.MoveOutDate?.ToString("MMM d, yyyy") ?? "Current")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@* ── Status / Review History (REVIEW-5) ──────────────────────────────────── *@
+<div class="card mb-3">
+    <div class="card-header fw-semibold">Status &amp; Review History</div>
+    <div class="card-body p-0">
+        @if (!Model.StatusHistory.Any())
+        {
+            <p class="text-muted p-3 mb-0">No history entries yet.</p>
+        }
+        else
+        {
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>By</th>
+                        <th>When</th>
+                        <th>Comment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var h in Model.StatusHistory)
+                    {
+                        <tr>
+                            <td><span class="badge text-bg-secondary">@h.ResultingStatus</span></td>
+                            <td>@h.ActorName</td>
+                            <td>@h.Timestamp.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</td>
+                            <td class="text-muted">@h.Comment</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

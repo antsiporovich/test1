@@ -55,4 +55,17 @@ public interface IApplicationService
     /// check belongs in the controller (so a mismatch is a clean 403), this is the
     /// service-level backstop against the same id being released mid-flight.</summary>
     Task<ServiceResult<bool>> ReleaseAsync(int applicationId, string actorUserId, CancellationToken ct = default);
+
+    /// <summary>REVIEW-2: active-lease guard (same predicate as LIFE-1 submit check,
+    /// two call sites one method — Features/07). Creates a 12-month Lease via
+    /// <see cref="Lease.Create"/>; transitions to Approved (terminal); records history.</summary>
+    Task<ServiceResult<bool>> ApproveAsync(Application application, string actorUserId, string? comment, CancellationToken ct = default);
+
+    /// <summary>REVIEW-3: transitions to Returned (editable); records history with
+    /// required comment so applicant can see it and correct (LIFE-3).</summary>
+    Task<ServiceResult<bool>> ReturnToApplicantAsync(Application application, string actorUserId, string comment, CancellationToken ct = default);
+
+    /// <summary>REVIEW-4: transitions to Denied (terminal); records history with
+    /// required comment.</summary>
+    Task<ServiceResult<bool>> DenyAsync(Application application, string actorUserId, string comment, CancellationToken ct = default);
 }

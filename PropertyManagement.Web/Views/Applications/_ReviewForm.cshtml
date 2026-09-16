@@ -1,0 +1,51 @@
+@model PropertyManagement.Web.Models.ReviewFormViewModel
+@* REVIEW-1: modal partial — returned by GET /Applications/{id}/Review and re-rendered
+   in-place by ajaxModal.js when the POST fails validation. *@
+
+<div class="modal-header">
+    <h5 class="modal-title">Review Application</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<form method="post" asp-controller="Applications" asp-action="Review" asp-route-id="@Model.ApplicationId">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="ApplicationId" />
+    <div class="modal-body">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+
+        <fieldset class="mb-3">
+            <legend class="col-form-label pt-0 fw-semibold">Outcome</legend>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" asp-for="Outcome"
+                       id="outcomeApprove" value="Approve" />
+                <label class="form-check-label text-success fw-semibold" for="outcomeApprove">Approve</label>
+                <div class="form-text">Issues a 12-month lease for the unit.</div>
+            </div>
+            <div class="form-check mt-2">
+                <input class="form-check-input" type="radio" asp-for="Outcome"
+                       id="outcomeReturn" value="Return" />
+                <label class="form-check-label text-warning-emphasis fw-semibold" for="outcomeReturn">Return for Correction</label>
+                <div class="form-text">Sends the application back to the applicant.</div>
+            </div>
+            <div class="form-check mt-2">
+                <input class="form-check-input" type="radio" asp-for="Outcome"
+                       id="outcomeDeny" value="Deny" />
+                <label class="form-check-label text-danger fw-semibold" for="outcomeDeny">Deny</label>
+                <div class="form-text">Terminates the application permanently.</div>
+            </div>
+            <span asp-validation-for="Outcome" class="text-danger small"></span>
+        </fieldset>
+
+        <div class="mb-3">
+            <label asp-for="Comment" class="form-label">
+                Comment <span class="text-muted">(required for Return and Deny)</span>
+            </label>
+            <textarea asp-for="Comment" class="form-control" rows="4"
+                      placeholder="Enter your review comments…"></textarea>
+            <span asp-validation-for="Comment" class="text-danger small"></span>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Submit Review</button>
+    </div>
+</form>
