@@ -1,0 +1,45 @@
+## .NET / Visual Studio / Rider
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## User-specific / secrets
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+secrets.json
+appsettings.*.Local.json
+appsettings.Development.local.json
+
+## Rider / VS
+.vs/
+.idea/
+*.DotSettings.user
+
+## Test / coverage
+[Tt]est[Rr]esult*/
+coverage*.json
+coverage*.xml
+coverage*.info
+*.coverage
+*.coveragexml
+
+## OS
+.DS_Store
+Thumbs.db
+
+## EF
+*.mdf
+*.ldf
