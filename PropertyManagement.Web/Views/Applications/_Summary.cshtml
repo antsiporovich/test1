@@ -2,6 +2,19 @@
 
 <h2 class="h4">Summary</h2>
 
+@if (Model.OutstandingErrors.Count > 0)
+{
+    <div class="alert alert-danger">
+        <p class="mb-1"><strong>Resolve these before submitting:</strong></p>
+        <ul class="mb-0">
+            @foreach (var error in Model.OutstandingErrors)
+            {
+                <li><strong>@error.Field:</strong> @error.Message</li>
+            }
+        </ul>
+    </div>
+}
+
 <div class="card mb-3">
     <div class="card-header">Applicant Information</div>
     <div class="card-body">

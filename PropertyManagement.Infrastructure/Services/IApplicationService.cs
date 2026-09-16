@@ -28,7 +28,8 @@ public interface IApplicationService
 
     Task RemoveResidenceAsync(Residence residence, CancellationToken ct = default);
 
-    /// <summary>LIFE-1: gated on both sections saved + no active lease on the unit.</summary>
+    /// <summary>LIFE-1: gated on no outstanding validation issues (Features/13, VALID-3)
+    /// and no active lease on the unit.</summary>
     Task<ServiceResult<bool>> SubmitAsync(Application application, string actorUserId, CancellationToken ct = default);
 
     /// <summary>LIFE-2: gated on the application not already being terminal.</summary>

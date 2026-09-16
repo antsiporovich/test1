@@ -3,6 +3,7 @@ using PropertyManagement.Domain.Common;
 using PropertyManagement.Domain.Entities;
 using PropertyManagement.Domain.Enums;
 using PropertyManagement.Domain.Rules;
+using PropertyManagement.Domain.Validation;
 using PropertyManagement.Infrastructure.Data;
 
 namespace PropertyManagement.Infrastructure.Services;
@@ -61,9 +62,11 @@ public class ApplicationService(AppDbContext db, TimeProvider timeProvider) : IA
 
     public async Task<ServiceResult<bool>> SubmitAsync(Application application, string actorUserId, CancellationToken ct = default)
     {
-        if (!WizardStepRules.BothSectionsSaved(application))
+        // VALID-3: re-runs the same shared validators the Summary lists errors from —
+        // never trusts a client-reported "all clear" state.
+        if (ApplicationValidation.GetOutstandingErrors(application).Any())
         {
-            return ServiceResult<bool>.Fail(string.Empty, "Complete both sections before submitting.");
+            return ServiceResult<bool>.Fail(string.Empty, "Resolve the outstanding issues below before submitting.");
         }
 
         var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);

@@ -26,8 +26,4 @@ public static class WizardStepRules
 
         return WizardStep.Summary;
     }
-
-    /// <summary>The Submit gate (WIZ-4) — re-checked server-side at submit time, never trusted from the client.</summary>
-    public static bool BothSectionsSaved(Application application) =>
-        application.ApplicantInfo is not null && application.ResidenceHistoryConfirmedAtUtc is not null;
 }

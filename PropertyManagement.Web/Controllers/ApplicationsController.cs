@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using PropertyManagement.Domain.Entities;
 using PropertyManagement.Domain.Enums;
 using PropertyManagement.Domain.Rules;
+using PropertyManagement.Domain.Validation;
 using PropertyManagement.Infrastructure.Data;
 using PropertyManagement.Infrastructure.Identity;
 using PropertyManagement.Infrastructure.Services;
@@ -108,11 +109,8 @@ public class ApplicationsController(
                 return View("Wizard", await BuildWizardViewModelAsync(application, previousStep, ct));
 
             case "Continue" when model.CurrentStep == WizardStep.ApplicantInformation:
-                if (!TryValidateModel(model.ApplicantInformation, nameof(model.ApplicantInformation)))
-                {
-                    return View("Wizard", await BuildWizardViewModelAsync(application, WizardStep.ApplicantInformation, ct, model.ApplicantInformation));
-                }
-
+                // VALID-1: persists as-is and always advances, even with outstanding
+                // validation issues — Summary lists them, Submit blocks on them.
                 await applicationService.SaveApplicantInfoAsync(application, ToInput(model.ApplicantInformation), ct);
                 ModelState.Clear();
                 return View("Wizard", await BuildWizardViewModelAsync(application, WizardStep.ResidenceHistory, ct));
@@ -373,7 +371,7 @@ public class ApplicationsController(
     }
 
     private async Task<ApplicationWizardViewModel> BuildWizardViewModelAsync(
-        Application application, WizardStep step, CancellationToken ct, ApplicantInfoSectionViewModel? applicantInfoOverride = null)
+        Application application, WizardStep step, CancellationToken ct)
     {
         var vm = new ApplicationWizardViewModel
         {
@@ -382,7 +380,7 @@ public class ApplicationsController(
             IsEditable = application.Status.IsEditable(),
             IsWithdrawable = !application.Status.IsTerminal(),
             Status = application.Status.ToString(),
-            ApplicantInformation = applicantInfoOverride ?? MapApplicantInfo(application.ApplicantInfo),
+            ApplicantInformation = MapApplicantInfo(application.ApplicantInfo),
         };
 
         if (application.Status == ApplicationStatus.Returned)
@@ -394,8 +392,20 @@ public class ApplicationsController(
                 .FirstOrDefaultAsync(ct);
         }
 
+        // VALID-2: the same validator that feeds the Summary's outstanding list also
+        // drives these inline field errors — reachable via Back or a fresh GET landing
+        // back on a section that was saved-with-errors (VALID-1).
+        if (step == WizardStep.ApplicantInformation && application.ApplicantInfo is not null)
+        {
+            foreach (var error in ApplicantInformationValidator.Validate(application.ApplicantInfo))
+            {
+                ModelState.AddModelError($"ApplicantInformation.{error.Field}", error.Message);
+            }
+        }
+
         if (step == WizardStep.Summary)
         {
+            vm.OutstandingErrors = ApplicationValidation.GetOutstandingErrors(application).ToList();
             vm.Residences = application.Residences.Select(r => new ResidenceRowViewModel
             {
                 Id = r.Id,
@@ -428,8 +438,12 @@ public class ApplicationsController(
             ZipCode = info.ZipCode,
         };
 
+    // An empty posted form field binds a `string` property to null, not "" (that's how
+    // [Required] catches "posted but blank"). VALID-1 now persists this section even
+    // when invalid, so a blank field must still land as "" in the NOT NULL columns
+    // below, not a runtime null the compile-time non-nullable annotations don't catch.
     private static ApplicantInfoInput ToInput(ApplicantInfoSectionViewModel model) =>
-        new(model.FullName, model.Phone, model.Email, model.AddressLine1, model.AddressLine2, model.City, model.State, model.ZipCode);
+        new(model.FullName ?? "", model.Phone ?? "", model.Email ?? "", model.AddressLine1 ?? "", model.AddressLine2, model.City ?? "", model.State ?? "", model.ZipCode ?? "");
 
     private static ResidenceInput ToInput(ResidenceFormViewModel model) =>
         new(model.AddressLine1, model.AddressLine2, model.City, model.State, model.ZipCode, model.LandlordName, model.LandlordPhone, model.MoveInDate, model.MoveOutDate);

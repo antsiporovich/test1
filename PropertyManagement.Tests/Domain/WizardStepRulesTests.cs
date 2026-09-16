@@ -31,17 +31,4 @@ public class WizardStepRulesTests
 
         WizardStepRules.InitialStep(app).Should().Be(WizardStep.Summary);
     }
-
-    [Fact]
-    public void BothSectionsSaved_FalseUntilBothMarkersSet()
-    {
-        var app = new Application();
-        WizardStepRules.BothSectionsSaved(app).Should().BeFalse();
-
-        app.ApplicantInfo = new ApplicantInfo();
-        WizardStepRules.BothSectionsSaved(app).Should().BeFalse();
-
-        app.ResidenceHistoryConfirmedAtUtc = DateTimeOffset.UtcNow;
-        WizardStepRules.BothSectionsSaved(app).Should().BeTrue();
-    }
 }

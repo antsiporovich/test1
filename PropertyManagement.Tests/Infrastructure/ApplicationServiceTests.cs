@@ -50,6 +50,24 @@ public class ApplicationServiceTests
     }
 
     [Fact]
+    public async Task Submit_ApplicantInfoSavedWithOutstandingFieldError_IsRejected()
+    {
+        // Reachable only because of Bonus 4's save-with-errors (Features/13, VALID-1) —
+        // both sections have been "saved" (Continue was clicked on each) but the
+        // ApplicantInfo row is missing a required field. VALID-3's Submit gate must
+        // catch this even though the presence-only "both saved" check would pass it.
+        var (db, service, unit) = CreateContext();
+        var app = AddApplication(db, unit, ApplicationStatus.Draft, bothSectionsSaved: true);
+        app.ApplicantInfo!.Email = "";
+        db.SaveChanges();
+
+        var result = await service.SubmitAsync(app, "userA");
+
+        result.Succeeded.Should().BeFalse();
+        app.Status.Should().Be(ApplicationStatus.Draft);
+    }
+
+    [Fact]
     public async Task Submit_UnitHasActiveLease_RejectedAndStaysDraft()
     {
         var (db, service, unit) = CreateContext();

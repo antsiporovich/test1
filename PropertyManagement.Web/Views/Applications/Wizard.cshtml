@@ -20,7 +20,7 @@
     <div class="alert alert-danger">@Model.SubmitError</div>
 }
 
-<form method="post" asp-controller="Applications" asp-action="Wizard" asp-route-id="@Model.ApplicationId">
+<form id="wizardForm" method="post" asp-controller="Applications" asp-action="Wizard" asp-route-id="@Model.ApplicationId">
     @Html.AntiForgeryToken()
     <input type="hidden" asp-for="CurrentStep" />
 
@@ -51,7 +51,7 @@
             <div>
                 @if (Model.CurrentStep == WizardStep.Summary)
                 {
-                    <button type="submit" name="command" value="Submit" class="btn btn-primary">Submit</button>
+                    <button type="submit" name="command" value="Submit" class="btn btn-primary" disabled="@(Model.OutstandingErrors.Count > 0)">Submit</button>
                 }
                 else
                 {
@@ -72,4 +72,16 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Bonus 4 (Features/13, VALID-1): Continue must reach the server even with
+        // invalid fields, so a section can be saved-as-is and the wizard still
+        // advances. Field-level (blur/keyup) hints stay on; only submit-time
+        // blocking is disabled so jquery-validate never intercepts the POST.
+        $(function () {
+            var validator = $('#wizardForm').data('validator');
+            if (validator) {
+                validator.settings.onsubmit = false;
+            }
+        });
+    </script>
 }
