@@ -68,4 +68,11 @@ public interface IApplicationService
     /// <summary>REVIEW-4: transitions to Denied (terminal); records history with
     /// required comment.</summary>
     Task<ServiceResult<bool>> DenyAsync(Application application, string actorUserId, string comment, CancellationToken ct = default);
+
+    /// <summary>NOTES-1: appends a new timestamped + attributed note. PM-only; the
+    /// controller is responsible for the role check before calling this.</summary>
+    Task<ApplicationNote> AddNoteAsync(Application application, string authorUserId, string body, CancellationToken ct = default);
+
+    /// <summary>NOTES-1: overwrites the body of an existing note.</summary>
+    Task UpdateNoteAsync(ApplicationNote note, string body, CancellationToken ct = default);
 }

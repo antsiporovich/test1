@@ -1,0 +1,29 @@
+@model IEnumerable<PropertyManagement.Web.Models.NoteRowViewModel>
+@* NOTES-1/NOTES-2: PM-only notes list.
+   This partial is served ONLY from PM-authorized controller actions — it is
+   never included in any Applicant-facing view model or response. *@
+
+@if (!Model.Any())
+{
+    <p class="text-muted mb-0">No notes yet.</p>
+}
+else
+{
+    <ul class="list-group list-group-flush">
+        @foreach (var note in Model)
+        {
+            <li class="list-group-item px-0">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1 me-2" style="white-space: pre-wrap;">@note.Body</div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0"
+                            data-ajax-modal-url="@Url.Action("EditNoteForm", "Applications", new { id = note.ApplicationId, noteId = note.Id })">
+                        Edit
+                    </button>
+                </div>
+                <small class="text-muted">
+                    @note.AuthorName &mdash; @note.CreatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
+                </small>
+            </li>
+        }
+    </ul>
+}

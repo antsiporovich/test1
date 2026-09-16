@@ -23,4 +23,9 @@ public class ApplicationDetailViewModel
 
     // Status/review history — visible to PMs only (REVIEW-5).
     public List<StatusHistoryRowViewModel> StatusHistory { get; set; } = [];
+
+    /// <summary>NOTES-1/NOTES-2: PM-only internal notes. Structurally absent from
+    /// any Applicant-facing view model (ApplicationWizardViewModel never has this
+    /// property — see NOTES-1 test in ApplicationServiceNoteTests).</summary>
+    public List<NoteRowViewModel> Notes { get; set; } = [];
 }

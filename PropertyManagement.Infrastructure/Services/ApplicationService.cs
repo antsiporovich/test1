@@ -317,6 +317,28 @@ public class ApplicationService(AppDbContext db, TimeProvider timeProvider) : IA
         }
     }
 
+    // ── NOTES-1 ───────────────────────────────────────────────────────────────
+
+    public async Task<ApplicationNote> AddNoteAsync(Application application, string authorUserId, string body, CancellationToken ct = default)
+    {
+        var note = new ApplicationNote
+        {
+            ApplicationId = application.Id,
+            AuthorUserId = authorUserId,
+            Body = body,
+            CreatedAt = timeProvider.GetUtcNow(),
+        };
+        db.ApplicationNotes.Add(note);
+        await db.SaveChangesAsync(ct);
+        return note;
+    }
+
+    public async Task UpdateNoteAsync(ApplicationNote note, string body, CancellationToken ct = default)
+    {
+        note.Body = body;
+        await db.SaveChangesAsync(ct);
+    }
+
     private static void ApplyResidenceInput(Residence residence, ResidenceInput input)
     {
         residence.AddressLine1 = input.AddressLine1;

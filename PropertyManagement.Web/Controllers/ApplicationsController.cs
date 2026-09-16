@@ -500,6 +500,70 @@ public class ApplicationsController(
         return Json(new { success = true, redirect = Url.Action(nameof(Detail), new { id }) });
     }
 
+    // ── PM Notes (NOTES-1/NOTES-2, Features/12) ──────────────────────────────
+
+    [HttpGet("{id:int}/Notes/Create")]
+    [Authorize(Roles = "PropertyManager")]
+    public async Task<IActionResult> CreateNoteForm(int id, CancellationToken ct)
+    {
+        var exists = await db.Applications.AnyAsync(a => a.Id == id, ct);
+        if (!exists) return NotFound();
+        return PartialView("_NoteForm", new NoteFormViewModel { ApplicationId = id });
+    }
+
+    [HttpPost("{id:int}/Notes/Create")]
+    [Authorize(Roles = "PropertyManager")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateNote(int id, NoteFormViewModel model, CancellationToken ct)
+    {
+        model.ApplicationId = id;
+        var application = await db.Applications.FirstOrDefaultAsync(a => a.Id == id, ct);
+        if (application is null) return NotFound();
+
+        if (!ModelState.IsValid)
+            return PartialView("_NoteForm", model);
+
+        await applicationService.AddNoteAsync(application, userManager.GetUserId(User)!, model.Body!, ct);
+        return Json(new { success = true });
+    }
+
+    [HttpGet("{id:int}/Notes/{noteId:int}/Edit")]
+    [Authorize(Roles = "PropertyManager")]
+    public async Task<IActionResult> EditNoteForm(int id, int noteId, CancellationToken ct)
+    {
+        var note = await db.ApplicationNotes
+            .AsNoTracking()
+            .FirstOrDefaultAsync(n => n.Id == noteId && n.ApplicationId == id, ct);
+        if (note is null) return NotFound();
+        return PartialView("_NoteForm", new NoteFormViewModel { ApplicationId = id, NoteId = noteId, Body = note.Body });
+    }
+
+    [HttpPost("{id:int}/Notes/{noteId:int}/Edit")]
+    [Authorize(Roles = "PropertyManager")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditNote(int id, int noteId, NoteFormViewModel model, CancellationToken ct)
+    {
+        model.ApplicationId = id;
+        model.NoteId = noteId;
+        var note = await db.ApplicationNotes.FirstOrDefaultAsync(n => n.Id == noteId && n.ApplicationId == id, ct);
+        if (note is null) return NotFound();
+
+        if (!ModelState.IsValid)
+            return PartialView("_NoteForm", model);
+
+        await applicationService.UpdateNoteAsync(note, model.Body!, ct);
+        return Json(new { success = true });
+    }
+
+    /// <summary>AJAX refresh target for the notes list region after add/edit.</summary>
+    [HttpGet("{id:int}/Notes/ListPartial")]
+    [Authorize(Roles = "PropertyManager")]
+    public async Task<IActionResult> NotesListPartial(int id, CancellationToken ct)
+    {
+        var notes = await NotesListAsync(id, ct);
+        return PartialView("_NotesListPartial", notes);
+    }
+
     // ── Applicant-side loaders & helpers ─────────────────────────────────────
 
     private async Task<Application?> LoadOwnedApplicationAsync(int id, CancellationToken ct)
@@ -583,7 +647,35 @@ public class ApplicationsController(
                     Comment = h.Comment,
                 })
                 .ToList(),
+            Notes = await NotesListAsync(application.Id, ct),
         };
+    }
+
+    /// <summary>NOTES-1/NOTES-2: loads notes with author display names in one round-trip.</summary>
+    private async Task<List<NoteRowViewModel>> NotesListAsync(int applicationId, CancellationToken ct)
+    {
+        var notes = await db.ApplicationNotes
+            .AsNoTracking()
+            .Where(n => n.ApplicationId == applicationId)
+            .OrderBy(n => n.CreatedAt)
+            .Select(n => new { n.Id, n.Body, n.AuthorUserId, n.CreatedAt })
+            .ToListAsync(ct);
+
+        if (notes.Count == 0) return [];
+
+        var authorIds = notes.Select(n => n.AuthorUserId).Distinct().ToList();
+        var authorNames = await db.Users
+            .Where(u => authorIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.DisplayName ?? u.UserName ?? u.Id, ct);
+
+        return notes.Select(n => new NoteRowViewModel
+        {
+            Id = n.Id,
+            ApplicationId = applicationId,
+            Body = n.Body,
+            AuthorName = authorNames.TryGetValue(n.AuthorUserId, out var name) ? name : n.AuthorUserId,
+            CreatedAt = n.CreatedAt,
+        }).ToList();
     }
 
     private async Task<ApplicationWizardViewModel> BuildWizardViewModelAsync(

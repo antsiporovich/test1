@@ -100,6 +100,20 @@
     </div>
 </div>
 
+@* ── PM Notes (NOTES-1/NOTES-2, Features/12) — PM-only, never in applicant HTML *@
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Internal Notes</span>
+        <button type="button" class="btn btn-sm btn-outline-primary"
+                data-ajax-modal-url="@Url.Action("CreateNoteForm", "Applications", new { id = Model.Id })">
+            + Add Note
+        </button>
+    </div>
+    <div class="card-body" id="notesListRegion">
+        @await Html.PartialAsync("_NotesListPartial", Model.Notes)
+    </div>
+</div>
+
 @* ── Status / Review History (REVIEW-5) ──────────────────────────────────── *@
 <div class="card mb-3">
     <div class="card-header fw-semibold">Status &amp; Review History</div>
