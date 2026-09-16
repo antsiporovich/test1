@@ -1,0 +1,53 @@
+@model PropertyManagement.Web.Models.RegisterViewModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h1>Create account</h1>
+
+        <form asp-controller="Account" asp-action="Register" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" autocomplete="username" />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label"></label>
+                <input asp-for="Password" class="form-control" autocomplete="new-password" />
+                <div class="form-text">At least 8 characters, with an uppercase and lowercase letter, a digit, and a symbol.</div>
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ConfirmPassword" class="form-label"></label>
+                <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+            </div>
+
+            <fieldset class="mb-3">
+                <legend class="col-form-label">I am a...</legend>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" asp-for="Role" value="@PropertyManagement.Web.Models.AccountRole.Applicant" id="roleApplicant" />
+                    <label class="form-check-label" for="roleApplicant">Applicant — I want to browse units and apply</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" asp-for="Role" value="@PropertyManagement.Web.Models.AccountRole.PropertyManager" id="rolePropertyManager" />
+                    <label class="form-check-label" for="rolePropertyManager">Property Manager — I manage properties and review applications</label>
+                </div>
+                <span asp-validation-for="Role" class="text-danger"></span>
+            </fieldset>
+
+            <button type="submit" class="btn btn-primary">Create account</button>
+            <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" class="btn btn-link">Already have an account? Log in</a>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
