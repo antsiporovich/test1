@@ -23,5 +23,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+        if (Database.ProviderName == "Microsoft.EntityFrameworkCore.Sqlite")
+        {
+            // SQL Server's `rowversion` type auto-generates on insert/update; SQLite has no
+            // equivalent, so IsRowVersion() columns would insert as NULL and violate NOT NULL.
+            // Only used by SQLite-backed tests (efcore-code-first-sqlserver.md /
+            // dotnet-unit-testing.md's transaction/concurrency-test guidance) — no effect on
+            // the real SQL Server schema/migrations.
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                entityType.FindProperty("RowVersion")?.SetDefaultValueSql("randomblob(8)");
+            }
+        }
     }
 }

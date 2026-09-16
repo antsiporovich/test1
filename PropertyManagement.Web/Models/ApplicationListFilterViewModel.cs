@@ -10,4 +10,7 @@ public class ApplicationListFilterViewModel
 
     public List<SelectListItem> StatusOptions { get; set; } = [];
     public List<SelectListItem> PropertyOptions { get; set; } = [];
+
+    /// <summary>PM-only (Bonus 2 review queue); null for Applicants.</summary>
+    public List<ReviewQueueRowViewModel>? QueueRows { get; set; }
 }

@@ -33,4 +33,15 @@ public interface IApplicationService
 
     /// <summary>LIFE-2: gated on the application not already being terminal.</summary>
     Task<ServiceResult<bool>> WithdrawAsync(Application application, string actorUserId, CancellationToken ct = default);
+
+    /// <summary>QUEUE-1: takes an id, not a loaded entity — the atomic conditional
+    /// update (only succeeds if still Submitted) needs a fresh DB read at execution
+    /// time, not a snapshot that could already be stale by the time this runs. Any PM
+    /// may attempt this; there's no per-application ownership on the PM side.</summary>
+    Task<ServiceResult<bool>> ClaimAsync(int applicationId, string actorUserId, CancellationToken ct = default);
+
+    /// <summary>QUEUE-2: same atomic-update shape as Claim; the *primary* claimant-only
+    /// check belongs in the controller (so a mismatch is a clean 403), this is the
+    /// service-level backstop against the same id being released mid-flight.</summary>
+    Task<ServiceResult<bool>> ReleaseAsync(int applicationId, string actorUserId, CancellationToken ct = default);
 }

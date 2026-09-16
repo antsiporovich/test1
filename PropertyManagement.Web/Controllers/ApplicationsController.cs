@@ -17,14 +17,17 @@ namespace PropertyManagement.Web.Controllers;
 [Route("Applications")]
 public class ApplicationsController(
     IApplicationService applicationService,
+    IApplicationQueryService queryService,
     UserManager<ApplicationUser> userManager,
     AppDbContext db) : Controller
 {
     // Row data for this list now comes from the Bonus 1 grid (Features/10) fetching
-    // /api/applications client-side — this action only builds the filter dropdowns.
+    // /api/applications client-side — this action only builds the filter dropdowns
+    // (and, for PMs, the separate Review Queue rows below the grid).
     [HttpGet("")]
     public async Task<IActionResult> Index(ApplicationStatus? status, int? propertyId, CancellationToken ct)
     {
+        var isApplicant = User.IsInRole("Applicant");
         var vm = new ApplicationListFilterViewModel
         {
             Status = status,
@@ -38,6 +41,24 @@ public class ApplicationsController(
                 .Select(p => new SelectListItem(p.Name, p.Id.ToString()))
                 .ToListAsync(ct),
         };
+
+        if (!isApplicant)
+        {
+            var userId = userManager.GetUserId(User)!;
+            vm.QueueRows = await queryService
+                .BuildQuery(userId, isApplicant: false)
+                .Where(a => a.Status == ApplicationStatus.Submitted || a.Status == ApplicationStatus.UnderReview)
+                .OrderBy(a => a.Status).ThenBy(a => a.CreatedAtUtc)
+                .Select(a => new ReviewQueueRowViewModel
+                {
+                    Id = a.Id,
+                    PropertyUnit = a.Unit.Property.Name + " — Unit " + a.Unit.UnitNumber,
+                    Status = a.Status,
+                    ClaimedByName = a.ClaimedByUserId == null ? null : userManager.Users.Where(u => u.Id == a.ClaimedByUserId).Select(u => u.DisplayName).FirstOrDefault(),
+                    IsClaimedByMe = a.ClaimedByUserId == userId,
+                })
+                .ToListAsync(ct);
+        }
 
         return View(vm);
     }
@@ -133,6 +154,46 @@ public class ApplicationsController(
         if (!result.Succeeded)
         {
             return BadRequest(new { message = result.Errors.Values.SelectMany(e => e).FirstOrDefault() });
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost("{id:int}/Claim")]
+    [Authorize(Roles = "PropertyManager")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Claim(int id, CancellationToken ct)
+    {
+        var result = await applicationService.ClaimAsync(id, userManager.GetUserId(User)!, ct);
+        if (!result.Succeeded)
+        {
+            TempData["Error"] = result.Errors.Values.SelectMany(e => e).FirstOrDefault();
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost("{id:int}/Release")]
+    [Authorize(Roles = "PropertyManager")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Release(int id, CancellationToken ct)
+    {
+        var userId = userManager.GetUserId(User)!;
+
+        // Primary claimant-only check (QUEUE-2): a clean 403 for a mismatch, checked
+        // before calling the service so a wrong-PM crafted request is rejected the same
+        // way role/ownership mismatches are elsewhere (aspnet-identity-authorization.md).
+        // ReleaseAsync's own conditional update is the backstop against a same-id race.
+        var claimedBy = await db.Applications.Where(a => a.Id == id).Select(a => (string?)a.ClaimedByUserId).FirstOrDefaultAsync(ct);
+        if (claimedBy != userId)
+        {
+            return Forbid();
+        }
+
+        var result = await applicationService.ReleaseAsync(id, userId, ct);
+        if (!result.Succeeded)
+        {
+            TempData["Error"] = result.Errors.Values.SelectMany(e => e).FirstOrDefault();
         }
 
         return RedirectToAction(nameof(Index));

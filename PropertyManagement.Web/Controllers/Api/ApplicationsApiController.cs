@@ -59,7 +59,9 @@ public class ApplicationsApiController(IApplicationQueryService queryService, Us
                 Id = a.Id,
                 Applicant = a.ApplicantInfo != null ? a.ApplicantInfo.FullName : null,
                 Property = a.Unit.Property.Name + " — Unit " + a.Unit.UnitNumber,
-                Status = a.Status.ToString(),
+                Status = a.Status == ApplicationStatus.UnderReview
+                    ? "Under Review (" + userManager.Users.Where(u => u.Id == a.ClaimedByUserId).Select(u => u.DisplayName).FirstOrDefault() + ")"
+                    : a.Status.ToString(),
                 Updated = a.StatusHistory.Any() ? a.StatusHistory.Max(h => h.Timestamp) : a.CreatedAtUtc,
             })
             .ToListAsync(ct);

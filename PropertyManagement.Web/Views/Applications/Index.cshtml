@@ -46,6 +46,50 @@
 
 <h1>Applications</h1>
 
+@if (TempData["Error"] is string error)
+{
+    <div class="alert alert-warning">@error</div>
+}
+
+@if (!isApplicant && Model.QueueRows is { Count: > 0 })
+{
+    <h2 class="h5">Review Queue</h2>
+    <table class="table table-sm align-middle mb-4">
+        <thead>
+            <tr>
+                <th>Property / Unit</th>
+                <th>Status</th>
+                <th>Claimed by</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Model.QueueRows)
+            {
+                <tr>
+                    <td>@row.PropertyUnit</td>
+                    <td>@row.Status</td>
+                    <td>@row.ClaimedByName</td>
+                    <td class="text-end">
+                        @if (row.Status == ApplicationStatus.Submitted)
+                        {
+                            <form asp-action="Claim" asp-route-id="@row.Id" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-primary">Claim</button>
+                            </form>
+                        }
+                        else if (row.IsClaimedByMe)
+                        {
+                            <form asp-action="Release" asp-route-id="@row.Id" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">Release</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
 <form method="get" class="row g-2 mb-3">
     <div class="col-auto">
         <select asp-for="Status" asp-items="Model.StatusOptions" class="form-select">

@@ -109,6 +109,80 @@ public class ApplicationService(AppDbContext db, TimeProvider timeProvider) : IA
         return ServiceResult<bool>.Success(true);
     }
 
+    public async Task<ServiceResult<bool>> ClaimAsync(int applicationId, string actorUserId, CancellationToken ct = default)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+        var now = timeProvider.GetUtcNow();
+
+        // Single atomic conditional update — only succeeds if the row is still
+        // Submitted at the moment this runs, so two PMs claiming at once can't both
+        // win (QUEUE-1). ExecuteUpdateAsync issues one UPDATE ... WHERE, no
+        // load-then-save race window.
+        var rowsAffected = await db.Applications
+            .Where(a => a.Id == applicationId && a.Status == ApplicationStatus.Submitted)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(a => a.Status, ApplicationStatus.UnderReview)
+                .SetProperty(a => a.ClaimedByUserId, actorUserId)
+                .SetProperty(a => a.ClaimedAtUtc, now), ct);
+
+        if (rowsAffected == 0)
+        {
+            await transaction.RollbackAsync(ct);
+            var current = await db.Applications.AsNoTracking().FirstOrDefaultAsync(a => a.Id == applicationId, ct);
+            return current switch
+            {
+                null => ServiceResult<bool>.Fail(string.Empty, "Application not found."),
+                { Status: ApplicationStatus.UnderReview } => ServiceResult<bool>.Fail(string.Empty, "This application is already claimed by another Property Manager."),
+                _ => ServiceResult<bool>.Fail(string.Empty, $"This application can no longer be claimed (status: {current.Status})."),
+            };
+        }
+
+        db.ApplicationStatusHistories.Add(new ApplicationStatusHistory
+        {
+            ApplicationId = applicationId,
+            FromStatus = ApplicationStatus.Submitted,
+            ToStatus = ApplicationStatus.UnderReview,
+            ActorUserId = actorUserId,
+            Timestamp = now,
+        });
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+
+        return ServiceResult<bool>.Success(true);
+    }
+
+    public async Task<ServiceResult<bool>> ReleaseAsync(int applicationId, string actorUserId, CancellationToken ct = default)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+        var rowsAffected = await db.Applications
+            .Where(a => a.Id == applicationId && a.Status == ApplicationStatus.UnderReview && a.ClaimedByUserId == actorUserId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(a => a.Status, ApplicationStatus.Submitted)
+                .SetProperty(a => a.ClaimedByUserId, (string?)null)
+                .SetProperty(a => a.ClaimedAtUtc, (DateTimeOffset?)null), ct);
+
+        if (rowsAffected == 0)
+        {
+            await transaction.RollbackAsync(ct);
+            return ServiceResult<bool>.Fail(string.Empty, "You can only release an application you claimed.");
+        }
+
+        db.ApplicationStatusHistories.Add(new ApplicationStatusHistory
+        {
+            ApplicationId = applicationId,
+            FromStatus = ApplicationStatus.UnderReview,
+            ToStatus = ApplicationStatus.Submitted,
+            ActorUserId = actorUserId,
+            Timestamp = timeProvider.GetUtcNow(),
+        });
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+
+        return ServiceResult<bool>.Success(true);
+    }
+
     private static void ApplyResidenceInput(Residence residence, ResidenceInput input)
     {
         residence.AddressLine1 = input.AddressLine1;
