@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PropertyManagement.Domain.Rules;
-using PropertyManagement.Infrastructure.Data;
+using PropertyManagement.Infrastructure.Services;
 using PropertyManagement.Web.Models;
 
 namespace PropertyManagement.Web.ViewComponents;
@@ -13,38 +11,24 @@ namespace PropertyManagement.Web.ViewComponents;
 /// after any unit create/edit/remove (a controller action can return
 /// <c>ViewComponent("UnitList", new { propertyId })</c> directly).
 /// </summary>
-public class UnitListViewComponent(AppDbContext db, TimeProvider timeProvider) : ViewComponent
+public class UnitListViewComponent(IUnitService unitService) : ViewComponent
 {
     public async Task<IViewComponentResult> InvokeAsync(int propertyId)
     {
-        var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
-
-        var units = await db.Units
-            .Where(u => u.IsActive && u.PropertyId == propertyId)
-            .Include(u => u.UnitType)
-            .OrderBy(u => u.UnitNumber)
-            .AsNoTracking()
-            .ToListAsync();
-
-        var unitIds = units.Select(u => u.Id).ToList();
-        var unavailableUnitIds = await db.Leases
-            .Where(l => unitIds.Contains(l.UnitId))
-            .CoveringDate(today)
-            .Select(l => l.UnitId)
-            .ToListAsync();
+        var rows = await unitService.GetActiveWithAvailabilityAsync(propertyId);
 
         var model = new UnitListViewModel
         {
             PropertyId = propertyId,
-            Units = units.Select(u => new UnitRowViewModel
+            Units = rows.Select(r => new UnitRowViewModel
             {
-                Id = u.Id,
-                PropertyId = u.PropertyId,
-                UnitNumber = u.UnitNumber,
-                Bedrooms = u.Bedrooms,
-                MonthlyRent = u.MonthlyRent,
-                UnitTypeName = u.UnitType.Name,
-                IsAvailable = !unavailableUnitIds.Contains(u.Id),
+                Id = r.Unit.Id,
+                PropertyId = r.Unit.PropertyId,
+                UnitNumber = r.Unit.UnitNumber,
+                Bedrooms = r.Unit.Bedrooms,
+                MonthlyRent = r.Unit.MonthlyRent,
+                UnitTypeName = r.Unit.UnitType.Name,
+                IsAvailable = r.IsAvailable,
             }).ToList(),
         };
 

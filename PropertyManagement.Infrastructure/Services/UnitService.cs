@@ -128,6 +128,29 @@ public class UnitService(AppDbContext db, TimeProvider timeProvider) : IUnitServ
         return ServiceResult<bool>.Success(true);
     }
 
+    public async Task<IReadOnlyList<UnitAvailabilityRow>> GetActiveWithAvailabilityAsync(int propertyId, CancellationToken ct = default)
+    {
+        var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+
+        var units = await db.Units
+            .Where(u => u.IsActive && u.PropertyId == propertyId)
+            .Include(u => u.UnitType)
+            .OrderBy(u => u.UnitNumber)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        var unitIds = units.Select(u => u.Id).ToList();
+        var unavailableUnitIds = await db.Leases
+            .Where(l => unitIds.Contains(l.UnitId))
+            .CoveringDate(today)
+            .Select(l => l.UnitId)
+            .ToListAsync(ct);
+
+        return units
+            .Select(u => new UnitAvailabilityRow(u, IsAvailable: !unavailableUnitIds.Contains(u.Id)))
+            .ToList();
+    }
+
     private async Task<ServiceResult<Unit>?> ValidateUniqueUnitNumberAsync(int propertyId, string unitNumber, int? excludingUnitId, CancellationToken ct)
     {
         var isDuplicate = await db.Units.AnyAsync(

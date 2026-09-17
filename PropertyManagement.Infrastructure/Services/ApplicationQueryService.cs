@@ -114,6 +114,23 @@ public class ApplicationQueryService(AppDbContext db) : IApplicationQueryService
             .Select(h => h.Comment)
             .FirstOrDefaultAsync(ct);
 
+    public async Task<IReadOnlyList<Residence>> GetResidencesForApplicationAsync(int applicationId, CancellationToken ct = default) =>
+        await db.Residences
+            .Where(r => r.ApplicationId == applicationId)
+            .OrderByDescending(r => r.MoveInDate)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<CoApplicantDto>> GetCoApplicantsAsync(int applicationId, CancellationToken ct = default) =>
+        await db.ApplicationApplicants
+            .Where(a => a.ApplicationId == applicationId)
+            .Join(db.Users, a => a.UserId, u => u.Id, (a, u) => new CoApplicantDto(
+                u.DisplayName ?? u.UserName ?? u.Id,
+                u.Email ?? string.Empty))
+            .OrderBy(a => a.DisplayName)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
     // Allow-listed switch, never a client-provided column name interpolated into the
     // query (GRID-2). The "updated" expression is duplicated (not shared via a method
     // reference) with the DTO projection in ApplicationsApiController on purpose: EF

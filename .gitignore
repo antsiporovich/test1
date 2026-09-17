@@ -19,6 +19,7 @@ bld/
 *.suo
 *.userosscache
 *.sln.docstates
+*.slnx
 secrets.json
 appsettings.*.Local.json
 appsettings.Development.local.json

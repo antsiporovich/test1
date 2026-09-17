@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PropertyManagement.Infrastructure.Data;
+using PropertyManagement.Infrastructure.Services;
 using PropertyManagement.Web.Models;
 
 namespace PropertyManagement.Web.ViewComponents;
@@ -11,15 +10,11 @@ namespace PropertyManagement.Web.ViewComponents;
 /// the wizard's Residence History step and as the AJAX-refresh target after any
 /// residence add/edit/remove (Features/05).
 /// </summary>
-public class ResidenceHistorySectionViewComponent(AppDbContext db) : ViewComponent
+public class ResidenceHistorySectionViewComponent(IApplicationQueryService queryService) : ViewComponent
 {
     public async Task<IViewComponentResult> InvokeAsync(int applicationId, bool isEditable)
     {
-        var residences = await db.Residences
-            .Where(r => r.ApplicationId == applicationId)
-            .OrderByDescending(r => r.MoveInDate)
-            .AsNoTracking()
-            .ToListAsync();
+        var residences = await queryService.GetResidencesForApplicationAsync(applicationId);
 
         var model = new ResidenceHistoryListViewModel
         {

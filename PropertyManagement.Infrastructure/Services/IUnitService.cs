@@ -20,4 +20,11 @@ public interface IUnitService
 
     /// <summary>Soft delete, rejected if the unit has an active lease or an open (non-terminal) application.</summary>
     Task<ServiceResult<bool>> RemoveAsync(int unitId, CancellationToken ct = default);
+
+    /// <summary>Active units for a property (UnitType included), ordered by unit number —
+    /// with live availability using the shared lease-covering-today predicate.</summary>
+    Task<IReadOnlyList<UnitAvailabilityRow>> GetActiveWithAvailabilityAsync(int propertyId, CancellationToken ct = default);
 }
+
+/// <summary>Unit list row for the PM property units widget.</summary>
+public record UnitAvailabilityRow(Unit Unit, bool IsAvailable);

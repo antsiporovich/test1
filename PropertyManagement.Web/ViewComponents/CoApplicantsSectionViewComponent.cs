@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PropertyManagement.Infrastructure.Data;
+using PropertyManagement.Infrastructure.Services;
 using PropertyManagement.Web.Models;
 
 namespace PropertyManagement.Web.ViewComponents;
@@ -10,20 +9,17 @@ namespace PropertyManagement.Web.ViewComponents;
 /// (Features/14, MULTI-1/MULTI-2) — independent of whatever the host page already has in
 /// hand. Reused both for the Summary step and as the AJAX-refresh target after adding one.
 /// </summary>
-public class CoApplicantsSectionViewComponent(AppDbContext db) : ViewComponent
+public class CoApplicantsSectionViewComponent(IApplicationQueryService queryService) : ViewComponent
 {
     public async Task<IViewComponentResult> InvokeAsync(int applicationId, bool isEditable)
     {
-        var applicants = await db.ApplicationApplicants
-            .Where(a => a.ApplicationId == applicationId)
-            .Join(db.Users, a => a.UserId, u => u.Id, (a, u) => new CoApplicantRowViewModel
+        var applicants = (await queryService.GetCoApplicantsAsync(applicationId))
+            .Select(a => new CoApplicantRowViewModel
             {
-                DisplayName = u.DisplayName,
-                Email = u.Email!,
+                DisplayName = a.DisplayName,
+                Email = a.Email,
             })
-            .OrderBy(a => a.DisplayName)
-            .AsNoTracking()
-            .ToListAsync();
+            .ToList();
 
         return View(new CoApplicantsListViewModel { ApplicationId = applicationId, IsEditable = isEditable, Applicants = applicants });
     }

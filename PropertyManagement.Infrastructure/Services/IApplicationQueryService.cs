@@ -42,4 +42,13 @@ public interface IApplicationQueryService
     Task<IReadOnlyList<ApplicationNote>> GetNotesAsync(int applicationId, CancellationToken ct = default);
 
     Task<string?> GetLatestReturnCommentAsync(int applicationId, CancellationToken ct = default);
+
+    /// <summary>Residences for the Residence History view component (newest MoveIn first).</summary>
+    Task<IReadOnlyList<Residence>> GetResidencesForApplicationAsync(int applicationId, CancellationToken ct = default);
+
+    /// <summary>Co-applicants with display name + email for the CoApplicants view component.</summary>
+    Task<IReadOnlyList<CoApplicantDto>> GetCoApplicantsAsync(int applicationId, CancellationToken ct = default);
 }
+
+/// <summary>Lightweight co-applicant row for section widgets (avoids Identity types in Web VMs).</summary>
+public record CoApplicantDto(string DisplayName, string Email);
