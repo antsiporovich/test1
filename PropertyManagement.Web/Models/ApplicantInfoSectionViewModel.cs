@@ -4,6 +4,10 @@ namespace PropertyManagement.Web.Models;
 
 public class ApplicantInfoSectionViewModel
 {
+    /// <summary>WIZ-5: server-computed; same partial renders inputs vs plain text.
+    /// Never trust a posted value for authorization — write guard is separate.</summary>
+    public bool IsEditable { get; set; }
+
     /// <summary>MULTI-4: round-tripped from the loaded entity; checked as the EF
     /// original value on save so a concurrent edit is rejected, not overwritten.
     /// Empty for a section that has never been saved (nothing to conflict with).</summary>

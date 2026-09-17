@@ -655,7 +655,7 @@ public class ApplicationsController(
             PrimaryApplicantPhone = application.ApplicantInfo?.Phone ?? "",
             PrimaryApplicantInitials = InitialsFromName(primaryName),
             CanReview = CanCurrentPmReview(application),
-            ApplicantInformation = MapApplicantInfo(application.ApplicantInfo),
+            ApplicantInformation = MapApplicantInfo(application.ApplicantInfo, isEditable: false),
             Residences = application.Residences
                 .OrderBy(r => r.MoveInDate)
                 .Select(r => new ResidenceRowViewModel
@@ -726,7 +726,7 @@ public class ApplicationsController(
             IsEditable = application.Status.IsEditable(),
             IsWithdrawable = !application.Status.IsTerminal(),
             Status = application.Status.ToString(),
-            ApplicantInformation = MapApplicantInfo(application.ApplicantInfo),
+            ApplicantInformation = MapApplicantInfo(application.ApplicantInfo, isEditable: application.Status.IsEditable()),
         };
 
         if (application.Status == ApplicationStatus.Returned)
@@ -772,10 +772,11 @@ public class ApplicationsController(
         return vm;
     }
 
-    private static ApplicantInfoSectionViewModel MapApplicantInfo(ApplicantInfo? info) => info is null
-        ? new ApplicantInfoSectionViewModel()
+    private static ApplicantInfoSectionViewModel MapApplicantInfo(ApplicantInfo? info, bool isEditable) => info is null
+        ? new ApplicantInfoSectionViewModel { IsEditable = isEditable }
         : new ApplicantInfoSectionViewModel
         {
+            IsEditable = isEditable,
             FullName = info.FullName,
             Phone = info.Phone,
             Email = info.Email,
