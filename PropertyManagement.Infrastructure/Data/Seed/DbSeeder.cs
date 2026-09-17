@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PropertyManagement.Domain.Entities;
 using PropertyManagement.Domain.Enums;
+using PropertyManagement.Domain.Rules;
 using PropertyManagement.Infrastructure.Identity;
 
 namespace PropertyManagement.Infrastructure.Data.Seed;
@@ -140,7 +141,7 @@ public class DbSeeder(
         return result;
     }
 
-    private record UnitDefinition(string UnitNumber, int Bedrooms, decimal MonthlyRent, string UnitTypeName, bool IsActive = true);
+    private record UnitDefinition(string UnitNumber, int Bedrooms, int Bathrooms, decimal MonthlyRent, string UnitTypeName, bool IsActive = true);
 
     private async Task<List<Unit>> SeedPropertiesAndUnitsAsync(Dictionary<string, UnitType> unitTypes)
     {
@@ -150,38 +151,38 @@ public class DbSeeder(
         [
             ("Maple Grove Apartments",
             [
-                new("101", 0, 950m, "Studio"),
-                new("102", 1, 1200m, "One Bedroom"),
-                new("103", 1, 1250m, "Loft"), // grandfathered onto the now-inactive "Loft" type
-                new("104", 2, 1500m, "Two Bedroom", IsActive: false), // soft-deleted demo unit
+                new("101", 0, 1, 950m, "Studio"),
+                new("102", 1, 1, 1200m, "One Bedroom"),
+                new("103", 1, 1, 1250m, "Loft"), // grandfathered onto the now-inactive "Loft" type
+                new("104", 2, 1, 1500m, "Two Bedroom", IsActive: false), // soft-deleted demo unit
             ]),
             ("Riverside Commons",
             [
-                new("201", 2, 1550m, "Two Bedroom"),
-                new("202", 1, 1225m, "One Bedroom"),
-                new("203", 3, 1850m, "Three Bedroom"),
-                new("204", 0, 975m, "Studio"),
+                new("201", 2, 1, 1550m, "Two Bedroom"),
+                new("202", 1, 1, 1225m, "One Bedroom"),
+                new("203", 3, 2, 1850m, "Three Bedroom"),
+                new("204", 0, 1, 975m, "Studio"),
             ]),
             ("Downtown Lofts",
             [
-                new("301", 1, 1600m, "Loft"),
-                new("302", 2, 1700m, "Two Bedroom"),
-                new("303", 0, 1100m, "Studio"),
-                new("304", 1, 1350m, "One Bedroom"),
+                new("301", 1, 1, 1600m, "Loft"),
+                new("302", 2, 1, 1700m, "Two Bedroom"),
+                new("303", 0, 1, 1100m, "Studio"),
+                new("304", 1, 1, 1350m, "One Bedroom"),
             ]),
             ("Cedar Hill Residences",
             [
-                new("401", 3, 1950m, "Three Bedroom"),
-                new("402", 2, 1600m, "Two Bedroom"),
-                new("403", 1, 1275m, "One Bedroom"),
-                new("404", 0, 999m, "Studio"),
+                new("401", 3, 2, 1950m, "Three Bedroom"),
+                new("402", 2, 1, 1600m, "Two Bedroom"),
+                new("403", 1, 1, 1275m, "One Bedroom"),
+                new("404", 0, 1, 999m, "Studio"),
             ]),
             ("Willow Park Flats",
             [
-                new("501", 1, 1300m, "One Bedroom"),
-                new("502", 2, 1625m, "Two Bedroom"),
-                new("503", 3, 1900m, "Three Bedroom"),
-                new("504", 1, 1225m, "One Bedroom"),
+                new("501", 1, 1, 1300m, "One Bedroom"),
+                new("502", 2, 1, 1625m, "Two Bedroom"),
+                new("503", 3, 2, 1900m, "Three Bedroom"),
+                new("504", 1, 1, 1225m, "One Bedroom"),
             ]),
         ];
 
@@ -217,6 +218,7 @@ public class DbSeeder(
                         PropertyId = property.Id,
                         UnitNumber = def.UnitNumber,
                         Bedrooms = def.Bedrooms,
+                        Bathrooms = def.Bathrooms,
                         MonthlyRent = def.MonthlyRent,
                         UnitTypeId = unitTypes[def.UnitTypeName].Id,
                         IsActive = def.IsActive,
@@ -260,6 +262,10 @@ public class DbSeeder(
                 City = faker.Address.City(),
                 State = faker.Address.StateAbbr(),
                 ZipCode = faker.Address.ZipCode(),
+                DateOfBirth = DateOnly.FromDateTime(faker.Date.Past(40, DateTime.UtcNow.AddYears(-21))),
+                Employment = faker.Name.JobTitle(),
+                AnnualIncome = faker.Finance.Amount(35000, 120000, 0),
+                DesiredMoveInDate = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(faker.Random.Int(1, 4))),
                 UpdatedAtUtc = createdAt,
             },
         };
@@ -290,6 +296,8 @@ public class DbSeeder(
                 LandlordPhone = faker.Phone.PhoneNumber("###-###-####"),
                 MoveInDate = DateOnly.FromDateTime(moveIn),
                 MoveOutDate = isCurrent ? null : DateOnly.FromDateTime(moveIn.AddMonths(10)),
+                MonthlyRent = faker.Finance.Amount(800, 2000, 0),
+                ReasonForLeaving = isCurrent ? null : faker.PickRandom("Relocating for work", "Need more space", "Lease ended"),
             });
         }
     }
@@ -308,13 +316,17 @@ public class DbSeeder(
     }
 
     /// <summary>
-    /// One application per status (Draft ×2, Submitted, Under Review, Returned,
+    /// One application per status (Draft ×2, Submitted ×5, Under Review ×3, Returned,
     /// Approved ×3 covering the today/past/future lease cases, Denied, Withdrawn),
-    /// plus a multi-applicant application (Bonus 5) and a PM note (Bonus 3). Guarded
-    /// as a single all-or-nothing block: everything here is added to one change
-    /// tracker and saved in one <c>SaveChangesAsync</c> call, so a failure partway
-    /// through leaves nothing behind for the "any applications exist" check below to
-    /// misinterpret as already-seeded.
+    /// plus a multi-applicant application (Bonus 5) and a PM note (Bonus 3). The extra
+    /// Submitted/Under Review rows beyond the first of each just give the Bonus 2
+    /// review queue and Bonus 1 grid enough depth to demo claim/release and paging.
+    /// Guarded as a single all-or-nothing block: everything here is added to one
+    /// change tracker and saved in one <c>SaveChangesAsync</c> call, so a failure
+    /// partway through leaves nothing behind for the "any applications exist" check
+    /// below to misinterpret as already-seeded, and — critically — nothing here ever
+    /// runs again nor touches a row it didn't just create, so a real applicant's own
+    /// Draft can never be silently rewritten or force-submitted by a later restart.
     /// </summary>
     private async Task SeedApplicationsAsync(List<string> pmIds, List<string> applicantIds, List<Unit> units)
     {
@@ -430,6 +442,45 @@ public class DbSeeder(
         TransitionStatus(withdrawn, ApplicationStatus.Submitted, applicantIds[0], now.AddDays(-11));
         withdrawn.SubmittedAtUtc = now.AddDays(-11);
         TransitionStatus(withdrawn, ApplicationStatus.Withdrawn, applicantIds[0], now.AddDays(-9));
+
+        // 11-13) Extra Submitted — Bonus 2 review queue / Bonus 1 grid paging depth.
+        var submitted2 = BuildApplication(units[11], faker, [applicantIds[1]], now.AddDays(-7));
+        submitted2.ResidenceHistoryConfirmedAtUtc = now.AddDays(-7);
+        TransitionStatus(submitted2, ApplicationStatus.Submitted, applicantIds[1], now.AddDays(-6));
+        submitted2.SubmittedAtUtc = now.AddDays(-6);
+
+        var submitted3 = BuildApplication(units[12], faker, [applicantIds[2]], now.AddDays(-8));
+        submitted3.ResidenceHistoryConfirmedAtUtc = now.AddDays(-8);
+        TransitionStatus(submitted3, ApplicationStatus.Submitted, applicantIds[2], now.AddDays(-7));
+        submitted3.SubmittedAtUtc = now.AddDays(-7);
+
+        var submitted4 = BuildApplication(units[13], faker, [applicantIds[3]], now.AddDays(-9));
+        submitted4.ResidenceHistoryConfirmedAtUtc = now.AddDays(-9);
+        TransitionStatus(submitted4, ApplicationStatus.Submitted, applicantIds[3], now.AddDays(-8));
+        submitted4.SubmittedAtUtc = now.AddDays(-8);
+
+        // 14-15) Extra Under Review — one per PM, so both claim/release paths demo immediately.
+        var underReview2 = BuildApplication(units[14], faker, [applicantIds[0]], now.AddDays(-11));
+        underReview2.ResidenceHistoryConfirmedAtUtc = now.AddDays(-11);
+        TransitionStatus(underReview2, ApplicationStatus.Submitted, applicantIds[0], now.AddDays(-10));
+        underReview2.SubmittedAtUtc = now.AddDays(-10);
+        TransitionStatus(underReview2, ApplicationStatus.UnderReview, pm2, now.AddDays(-9));
+        underReview2.ClaimedByUserId = pm2;
+        underReview2.ClaimedAtUtc = now.AddDays(-9);
+
+        var underReview3 = BuildApplication(units[15], faker, [applicantIds[1]], now.AddDays(-13));
+        underReview3.ResidenceHistoryConfirmedAtUtc = now.AddDays(-13);
+        TransitionStatus(underReview3, ApplicationStatus.Submitted, applicantIds[1], now.AddDays(-12));
+        underReview3.SubmittedAtUtc = now.AddDays(-12);
+        TransitionStatus(underReview3, ApplicationStatus.UnderReview, pm1, now.AddDays(-11));
+        underReview3.ClaimedByUserId = pm1;
+        underReview3.ClaimedAtUtc = now.AddDays(-11);
+
+        // 16) One more Submitted, rounding the queue out to 8 rows total.
+        var submitted5 = BuildApplication(units[16], faker, [applicantIds[2]], now.AddDays(-14));
+        submitted5.ResidenceHistoryConfirmedAtUtc = now.AddDays(-14);
+        TransitionStatus(submitted5, ApplicationStatus.Submitted, applicantIds[2], now.AddDays(-13));
+        submitted5.SubmittedAtUtc = now.AddDays(-13);
 
         await db.SaveChangesAsync();
         logger.LogInformation("Seeded demo applications covering every status.");

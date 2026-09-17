@@ -53,6 +53,7 @@ public class UnitService(AppDbContext db, TimeProvider timeProvider) : IUnitServ
             PropertyId = input.PropertyId,
             UnitNumber = input.UnitNumber,
             Bedrooms = input.Bedrooms,
+            Bathrooms = input.Bathrooms,
             MonthlyRent = input.MonthlyRent,
             UnitTypeId = input.UnitTypeId,
             IsActive = true,
@@ -90,6 +91,7 @@ public class UnitService(AppDbContext db, TimeProvider timeProvider) : IUnitServ
 
         unit.UnitNumber = input.UnitNumber;
         unit.Bedrooms = input.Bedrooms;
+        unit.Bathrooms = input.Bathrooms;
         unit.MonthlyRent = input.MonthlyRent;
         unit.UnitTypeId = input.UnitTypeId;
 

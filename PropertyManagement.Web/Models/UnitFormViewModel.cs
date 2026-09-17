@@ -18,6 +18,9 @@ public class UnitFormViewModel
     [Range(0, 10)]
     public int Bedrooms { get; set; }
 
+    [Range(0, 10)]
+    public int Bathrooms { get; set; }
+
     [Range(0.01, 1_000_000)]
     [Display(Name = "Monthly rent")]
     public decimal MonthlyRent { get; set; }

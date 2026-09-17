@@ -2,43 +2,47 @@
 
 @if (Model.Count == 0)
 {
-    <p class="text-muted">No properties yet. Add one to get started.</p>
+    <div class="border border-gray-200 rounded-xl p-10 text-center">
+        <p class="text-sm text-gray-400">No properties yet. Add one to get started.</p>
+    </div>
 }
 
-@foreach (var property in Model)
+@for (var i = 0; i < Model.Count; i++)
 {
-    <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <div>
-                <strong>@property.Name</strong>
-                <div class="text-muted small">@property.Address</div>
+    var property = Model[i];
+    <div class="border border-gray-200 rounded-xl overflow-hidden flex flex-col sm:flex-row">
+        <img src="@PropertyImageUrls.PropertyExteriorImage(i)" alt="@property.Name"
+             class="w-full sm:w-40 md:w-44 lg:w-48 h-40 sm:h-auto object-cover flex-shrink-0 sm:self-stretch bg-gray-100" />
+        <div class="flex-1 min-w-0 flex flex-col overflow-hidden">
+            <div class="px-5 py-4 flex flex-wrap items-start justify-between gap-3 border-b border-gray-200">
+                <div class="min-w-0">
+                    <p class="text-lg font-bold text-ink">@property.Name</p>
+                    <p class="text-sm text-muted">@property.Address</p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" class="inline-flex items-center justify-center w-[75px] py-1.5 border border-gray-300 text-gray-700 text-sm font-semibold rounded-md hover:bg-gray-50 transition-colors"
+                            data-ajax-modal-url="@Url.Action("EditForm", new { id = property.Id })"
+                            data-refresh-url="@Url.Action("ListPartial")"
+                            data-refresh-target="#propertyListRegion">
+                        Edit
+                    </button>
+                    <button type="button" class="inline-flex items-center justify-center w-[75px] py-1.5 border border-red-200 text-red-700 text-sm font-semibold rounded-md hover:bg-red-50 transition-colors"
+                            data-ajax-remove-url="@Url.Action("Remove", new { id = property.Id })"
+                            data-confirm="Remove @property.Name? Its units will no longer be listed."
+                            data-refresh-url="@Url.Action("ListPartial")"
+                            data-refresh-target="#propertyListRegion">
+                        Remove
+                    </button>
+                    <button type="button" class="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-md transition-colors"
+                            data-ajax-modal-url="@Url.Action("CreateForm", "Units", new { propertyId = property.Id })"
+                            data-refresh-url="@Url.Action("UnitsPartial", "Units", new { propertyId = property.Id })"
+                            data-refresh-target="#unitListRegion-@property.Id">
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                        Add Unit
+                    </button>
+                </div>
             </div>
-            <div class="d-flex align-items-center gap-2">
-                <span class="badge text-bg-secondary">@property.UnitCount unit@(property.UnitCount == 1 ? "" : "s")</span>
-                <button type="button" class="btn btn-sm btn-outline-secondary"
-                        data-ajax-modal-url="@Url.Action("EditForm", new { id = property.Id })"
-                        data-refresh-url="@Url.Action("ListPartial")"
-                        data-refresh-target="#propertyListRegion">
-                    Edit
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-danger"
-                        data-ajax-remove-url="@Url.Action("Remove", new { id = property.Id })"
-                        data-confirm="Remove @property.Name? Its units will no longer be listed."
-                        data-refresh-url="@Url.Action("ListPartial")"
-                        data-refresh-target="#propertyListRegion">
-                    Remove
-                </button>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="d-flex justify-content-end mb-2">
-                <button type="button" class="btn btn-sm btn-primary"
-                        data-ajax-modal-url="@Url.Action("CreateForm", "Units", new { propertyId = property.Id })"
-                        data-refresh-url="@Url.Action("UnitsPartial", "Units", new { propertyId = property.Id })"
-                        data-refresh-target="#unitListRegion-@property.Id">
-                    Add Unit
-                </button>
-            </div>
+
             <div id="unitListRegion-@property.Id">
                 @await Component.InvokeAsync("UnitList", new { propertyId = property.Id })
             </div>

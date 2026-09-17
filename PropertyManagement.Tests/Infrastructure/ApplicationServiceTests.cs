@@ -29,7 +29,20 @@ public class ApplicationServiceTests
         var app = new Application { UnitId = unit.Id, Status = status, CreatedAtUtc = DateTimeOffset.UtcNow };
         if (bothSectionsSaved)
         {
-            app.ApplicantInfo = new ApplicantInfo { FullName = "A", Phone = "1", Email = "a@b.com", AddressLine1 = "x", City = "y", State = "z", ZipCode = "0" };
+            app.ApplicantInfo = new ApplicantInfo
+            {
+                FullName = "A",
+                Phone = "555-123-4567",
+                Email = "a@b.com",
+                AddressLine1 = "x",
+                City = "y",
+                State = "z",
+                ZipCode = "0",
+                DateOfBirth = new DateOnly(1990, 1, 1),
+                Employment = "Engineer",
+                AnnualIncome = 50000m,
+                DesiredMoveInDate = new DateOnly(2024, 6, 1),
+            };
             app.ResidenceHistoryConfirmedAtUtc = DateTimeOffset.UtcNow;
         }
         db.Applications.Add(app);
@@ -156,7 +169,7 @@ public class ApplicationServiceTests
     {
         var (db, service, unit) = CreateContext();
         var app = AddApplication(db, unit, ApplicationStatus.Draft, bothSectionsSaved: false);
-        var input = new ResidenceInput("1 Main St", null, "City", "ST", "00000", "Landlord", "555-1234", Today.AddYears(-1), null, []);
+        var input = new ResidenceInput("1 Main St", null, "City", "ST", "00000", "Landlord", "555-1234", Today.AddYears(-1), null, 1200m, null, []);
 
         var residence = await service.AddResidenceAsync(app, input);
 
@@ -169,9 +182,9 @@ public class ApplicationServiceTests
     {
         var (db, service, unit) = CreateContext();
         var app = AddApplication(db, unit, ApplicationStatus.Draft, bothSectionsSaved: false);
-        var residence = await service.AddResidenceAsync(app, new ResidenceInput("1 Main St", null, "City", "ST", "00000", "Old", "555-1234", Today.AddYears(-1), null, []));
+        var residence = await service.AddResidenceAsync(app, new ResidenceInput("1 Main St", null, "City", "ST", "00000", "Old", "555-1234", Today.AddYears(-1), null, 1200m, null, []));
 
-        var result = await service.UpdateResidenceAsync(residence, new ResidenceInput("2 Main St", null, "City", "ST", "00000", "New", "555-5678", Today.AddYears(-1), Today.AddMonths(-1), residence.RowVersion));
+        var result = await service.UpdateResidenceAsync(residence, new ResidenceInput("2 Main St", null, "City", "ST", "00000", "New", "555-5678", Today.AddYears(-1), Today.AddMonths(-1), 1300m, "Relocating", residence.RowVersion));
 
         result.Succeeded.Should().BeTrue();
         residence.LandlordName.Should().Be("New");
@@ -183,7 +196,7 @@ public class ApplicationServiceTests
     {
         var (db, service, unit) = CreateContext();
         var app = AddApplication(db, unit, ApplicationStatus.Draft, bothSectionsSaved: false);
-        var residence = await service.AddResidenceAsync(app, new ResidenceInput("1 Main St", null, "City", "ST", "00000", "L", "555-1234", Today.AddYears(-1), null, []));
+        var residence = await service.AddResidenceAsync(app, new ResidenceInput("1 Main St", null, "City", "ST", "00000", "L", "555-1234", Today.AddYears(-1), null, 1100m, null, []));
 
         await service.RemoveResidenceAsync(residence);
 
@@ -195,7 +208,7 @@ public class ApplicationServiceTests
     {
         var (db, service, unit) = CreateContext();
         var app = AddApplication(db, unit, ApplicationStatus.Draft, bothSectionsSaved: false);
-        var input = new ApplicantInfoInput("Jane Doe", "555-1234", "jane@example.com", "1 Main St", null, "City", "ST", "00000", []);
+        var input = new ApplicantInfoInput("Jane Doe", "555-1234", "jane@example.com", "1 Main St", null, "City", "ST", "00000", new DateOnly(1990, 3, 14), "Marketing Specialist", 72000m, new DateOnly(2024, 6, 1), []);
 
         await service.SaveApplicantInfoAsync(app, input);
 

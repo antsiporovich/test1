@@ -20,11 +20,13 @@ public class BrowseController(IUnitBrowseService browseService, UserManager<Appl
             return RedirectToAction(nameof(PropertiesController.Index), "Properties");
         }
 
-        var units = await browseService.GetAvailableUnitsAsync(ct);
+        var userId = userManager.GetUserId(User);
+        var units = await browseService.GetAvailableUnitsAsync(userId, ct);
         var vm = units.Select(u => new AvailableUnitRowViewModel
         {
             UnitId = u.Id,
             PropertyName = u.Property.Name,
+            PropertyAddress = $"{u.Property.AddressLine1}, {u.Property.City}",
             UnitNumber = u.UnitNumber,
             Bedrooms = u.Bedrooms,
             MonthlyRent = u.MonthlyRent,

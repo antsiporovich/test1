@@ -11,6 +11,21 @@ public class ApplicationDetailViewModel
     public string ApplicantNames { get; set; } = "";
     public string Status { get; set; } = "";
 
+    public DateTimeOffset? SubmittedAtUtc { get; set; }
+
+    public string PropertyName { get; set; } = "";
+    public string PropertyAddressSummary { get; set; } = "";
+    public string PropertyImageUrl { get; set; } = "";
+    public string UnitNumber { get; set; } = "";
+    public int Bedrooms { get; set; }
+    public int Bathrooms { get; set; }
+    public string? UnitTypeName { get; set; }
+
+    public string PrimaryApplicantName { get; set; } = "";
+    public string PrimaryApplicantEmail { get; set; } = "";
+    public string PrimaryApplicantPhone { get; set; } = "";
+    public string PrimaryApplicantInitials { get; set; } = "";
+
     /// <summary>True when the current PM may open the Review modal:
     /// application is Submitted, or UnderReview and claimed by this PM.</summary>
     public bool CanReview { get; set; }

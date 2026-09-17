@@ -17,5 +17,6 @@ public interface IApplicationQueryService
         ApplicationStatus? status = null,
         int? propertyId = null,
         string? sortKey = null,
-        bool descending = false);
+        bool descending = false,
+        string? search = null);
 }

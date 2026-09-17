@@ -1,38 +1,140 @@
 @model PropertyManagement.Web.Models.LoginViewModel
 @{
-    ViewData["Title"] = "Log in";
+    ViewData["Title"] = "Sign in";
+    Layout = null;
 }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Log In — HomePlace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50:  '#edf8f3',
+                            100: '#d7efe4',
+                            200: '#afdfc9',
+                            500: '#3b916a',
+                            600: '#29664a',
+                            700: '#20503a',
+                            800: '#193e2d',
+                            900: '#132f22',
+                        },
+                        ink:   '#0b1220',
+                        muted: '#4e5867',
+                        mist:  '#ecf1f4',
+                    }
+                }
+            }
+        };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <style>body{font-family:'Inter',ui-sans-serif,system-ui,sans-serif;}</style>
+</head>
+<body class="bg-mist text-ink min-h-screen relative overflow-x-hidden">
 
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <h1>Log in</h1>
+    <div class="pointer-events-none absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-brand-100 opacity-60 blur-3xl"></div>
+    <div class="pointer-events-none absolute -bottom-32 -right-16 w-[28rem] h-[28rem] rounded-full bg-brand-100 opacity-50 blur-3xl"></div>
 
-        <form asp-controller="Account" asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+    <header class="relative z-10 bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-8">
+                <a asp-controller="Home" asp-action="Index" class="flex items-center gap-2">
+                    <i data-lucide="home" class="w-7 h-7 text-brand-600" stroke-width="2.2"></i>
+                    <span class="font-bold text-lg text-ink tracking-tight">HomePlace</span>
+                </a>
+                <nav class="hidden md:flex items-center gap-6">
+                    <a asp-controller="Home" asp-action="Index" class="text-sm font-medium text-gray-700 hover:text-gray-900">Home</a>
+                    <a asp-controller="Home" asp-action="Privacy" class="text-sm font-medium text-gray-500 hover:text-gray-800">Privacy</a>
+                </nav>
+            </div>
+            <div class="flex items-center gap-3">
+                <a asp-controller="Account" asp-action="Login" class="text-sm text-gray-600 font-medium">Login</a>
+                <a asp-controller="Account" asp-action="Register" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-md transition-colors">Register</a>
+            </div>
+        </div>
+    </header>
 
-            <div class="mb-3">
-                <label asp-for="Email" class="form-label"></label>
-                <input asp-for="Email" class="form-control" autocomplete="username" />
-                <span asp-validation-for="Email" class="text-danger"></span>
+    <main class="relative z-10 flex items-center justify-center px-4 py-16">
+        <div class="w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-xl px-8 py-10">
+            <div class="flex flex-col items-center text-center mb-7">
+                <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-brand-50 mb-4">
+                    <i data-lucide="home" class="w-6 h-6 text-brand-600" stroke-width="2.2"></i>
+                </div>
+                <h1 class="text-3xl font-extrabold text-ink mb-2">Welcome back</h1>
+                <p class="text-sm text-muted leading-relaxed">
+                    Log in to your HomePlace account to manage your properties, applications, and more.
+                </p>
             </div>
 
-            <div class="mb-3">
-                <label asp-for="Password" class="form-label"></label>
-                <input asp-for="Password" class="form-control" autocomplete="current-password" />
-                <span asp-validation-for="Password" class="text-danger"></span>
+            <form asp-controller="Account" asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post" novalidate class="space-y-4">
+                <div asp-validation-summary="ModelOnly" class="px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm empty:hidden" role="alert"></div>
+
+                <div>
+                    <label asp-for="Email" class="block text-[13px] font-medium text-gray-700 mb-1.5"></label>
+                    <input asp-for="Email" type="email" placeholder="you@example.com" autocomplete="username"
+                           class="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+                    <span asp-validation-for="Email" class="text-xs text-red-500 mt-1 block"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Password" class="block text-[13px] font-medium text-gray-700 mb-1.5"></label>
+                    <div class="relative">
+                        <input asp-for="Password" type="password" id="pwd-login" placeholder="Enter your password" autocomplete="current-password"
+                               class="w-full px-3.5 py-2.5 pr-10 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+                        <button type="button" data-toggle-pwd="pwd-login" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" aria-label="Toggle password visibility">
+                            <i data-lucide="eye-off" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Password" class="text-xs text-red-500 mt-1 block"></span>
+                </div>
+
+                <div class="flex items-center justify-between pt-1">
+                    <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                        <input asp-for="RememberMe" type="checkbox" class="w-4 h-4 rounded border-gray-300 accent-brand-600" />
+                        Remember me
+                    </label>
+                    <a href="#" class="text-sm font-medium text-brand-700 hover:text-brand-800">Forgot password?</a>
+                </div>
+
+                <button type="submit"
+                        class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-md transition-colors mt-2">
+                    Sign In
+                </button>
+            </form>
+
+            <div class="border-t border-gray-200 mt-6 pt-5 text-center">
+                <p class="text-sm text-gray-500">
+                    Don&rsquo;t have an account?
+                    <a asp-controller="Account" asp-action="Register" asp-route-returnUrl="@ViewData["ReturnUrl"]" class="font-semibold text-brand-700 hover:text-brand-800">Create one</a>
+                </p>
             </div>
+        </div>
+    </main>
 
-            <div class="mb-3 form-check">
-                <input asp-for="RememberMe" class="form-check-input" />
-                <label asp-for="RememberMe" class="form-check-label"></label>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Log in</button>
-            <a asp-controller="Account" asp-action="Register" asp-route-returnUrl="@ViewData["ReturnUrl"]" class="btn btn-link">Need an account? Register</a>
-        </form>
-    </div>
-</div>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+    <script src="@Url.Content("~/lib/jquery/dist/jquery.min.js")"></script>
+    <script src="@Url.Content("~/lib/jquery-validation/dist/jquery.validate.min.js")"></script>
+    <script src="@Url.Content("~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js")"></script>
+    <script>
+        lucide.createIcons();
+        document.querySelectorAll('[data-toggle-pwd]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var input = document.getElementById(this.getAttribute('data-toggle-pwd'));
+                var icon = this.querySelector('i');
+                var showing = input.type === 'text';
+                input.type = showing ? 'password' : 'text';
+                icon.setAttribute('data-lucide', showing ? 'eye-off' : 'eye');
+                lucide.createIcons();
+            });
+        });
+    </script>
+</body>
+</html>

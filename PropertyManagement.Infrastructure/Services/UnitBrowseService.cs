@@ -9,14 +9,25 @@ namespace PropertyManagement.Infrastructure.Services;
 
 public class UnitBrowseService(AppDbContext db, TimeProvider timeProvider) : IUnitBrowseService
 {
-    public async Task<List<Unit>> GetAvailableUnitsAsync(CancellationToken ct = default)
+    public async Task<List<Unit>> GetAvailableUnitsAsync(string? applicantUserId = null, CancellationToken ct = default)
     {
         var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
         var unavailableUnitIds = db.Leases.CoveringDate(today).Select(l => l.UnitId);
 
-        return await db.Units
+        var query = db.Units
             .Where(u => u.IsActive)
-            .Where(u => !unavailableUnitIds.Contains(u.Id))
+            .Where(u => !unavailableUnitIds.Contains(u.Id));
+
+        if (!string.IsNullOrEmpty(applicantUserId))
+        {
+            var appliedUnitIds = db.Applications
+                .OwnedBy(applicantUserId)
+                .Where(a => !ApplicationStatusRules.TerminalStatuses.Contains(a.Status))
+                .Select(a => a.UnitId);
+            query = query.Where(u => !appliedUnitIds.Contains(u.Id));
+        }
+
+        return await query
             .Include(u => u.Property)
             .Include(u => u.UnitType)
             .OrderBy(u => u.Property.Name).ThenBy(u => u.UnitNumber)

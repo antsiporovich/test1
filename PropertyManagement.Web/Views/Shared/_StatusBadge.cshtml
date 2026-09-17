@@ -1,0 +1,15 @@
+@model string
+@{
+    var (bg, text, label) = Model switch
+    {
+        "Draft" => ("bg-gray-100", "text-gray-700", "Draft"),
+        "Submitted" => ("bg-blue-100", "text-blue-700", "Submitted"),
+        "UnderReview" => ("bg-sky-100", "text-sky-700", "In Review"),
+        "Returned" => ("bg-amber-100", "text-amber-800", "Returned"),
+        "Approved" => ("bg-emerald-100", "text-emerald-800", "Approved"),
+        "Denied" => ("bg-red-100", "text-red-800", "Denied"),
+        "Withdrawn" => ("bg-red-100", "text-red-800", "Withdrawn"),
+        _ => ("bg-gray-100", "text-gray-700", Model),
+    };
+}
+<span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold @bg @text">@label</span>

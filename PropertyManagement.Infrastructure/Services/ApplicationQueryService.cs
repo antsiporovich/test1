@@ -13,7 +13,8 @@ public class ApplicationQueryService(AppDbContext db) : IApplicationQueryService
         ApplicationStatus? status = null,
         int? propertyId = null,
         string? sortKey = null,
-        bool descending = false)
+        bool descending = false,
+        string? search = null)
     {
         var query = db.Applications.AsQueryable();
 
@@ -31,6 +32,11 @@ public class ApplicationQueryService(AppDbContext db) : IApplicationQueryService
         if (propertyId is not null)
         {
             query = query.Where(a => a.Unit.PropertyId == propertyId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(a => a.ApplicantInfo != null && a.ApplicantInfo.FullName.Contains(search));
         }
 
         return ApplySort(query, sortKey, descending);

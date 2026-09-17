@@ -6,73 +6,94 @@
         : Url.Action("CreateResidence", "Applications", new { applicationId = Model.ApplicationId });
 }
 
-<div class="modal-header">
-    <h5 class="modal-title">@(isEdit ? "Edit residence" : "Add residence")</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+    <h5 class="text-base font-bold text-ink">@(isEdit ? "Edit Residence" : "Add Residence")</h5>
+    <button type="button" class="text-gray-400 hover:text-gray-600 transition-colors" data-bs-dismiss="modal" aria-label="Close">
+        <i data-lucide="x" class="w-5 h-5" aria-hidden="true"></i>
+    </button>
 </div>
 <form method="post" action="@actionUrl">
     @Html.AntiForgeryToken()
-    <div class="modal-body">
-        <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
-        <input type="hidden" asp-for="Id" />
-        <input type="hidden" asp-for="ApplicationId" />
-        <input type="hidden" asp-for="RowVersion" />
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="ApplicationId" />
+    <input type="hidden" asp-for="RowVersion" />
 
-        <div class="mb-3">
-            <label asp-for="AddressLine1" class="form-label"></label>
-            <input asp-for="AddressLine1" class="form-control" />
-            <span asp-validation-for="AddressLine1" class="text-danger"></span>
+    <div class="px-6 py-5 space-y-4">
+        <div asp-validation-summary="ModelOnly" class="px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm empty:hidden" role="alert"></div>
+
+        <div>
+            <label asp-for="AddressLine1" class="block text-[13px] font-medium text-gray-700 mb-1.5">Address <span class="text-red-500">*</span></label>
+            <input asp-for="AddressLine1" placeholder="456 Elm St" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+            <span asp-validation-for="AddressLine1" class="text-xs text-red-500 mt-1 block"></span>
         </div>
-        <div class="mb-3">
-            <label asp-for="AddressLine2" class="form-label"></label>
-            <input asp-for="AddressLine2" class="form-control" />
-            <span asp-validation-for="AddressLine2" class="text-danger"></span>
+
+        <div>
+            <label asp-for="AddressLine2" class="block text-[13px] font-medium text-gray-700 mb-1.5">Address Line 2</label>
+            <input asp-for="AddressLine2" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+            <span asp-validation-for="AddressLine2" class="text-xs text-red-500 mt-1 block"></span>
         </div>
-        <div class="row">
-            <div class="col mb-3">
-                <label asp-for="City" class="form-label"></label>
-                <input asp-for="City" class="form-control" />
-                <span asp-validation-for="City" class="text-danger"></span>
+
+        <div class="grid grid-cols-3 gap-3">
+            <div>
+                <label asp-for="City" class="block text-[13px] font-medium text-gray-700 mb-1.5">City <span class="text-red-500">*</span></label>
+                <input asp-for="City" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+                <span asp-validation-for="City" class="text-xs text-red-500 mt-1 block"></span>
             </div>
-            <div class="col mb-3">
-                <label asp-for="State" class="form-label"></label>
-                <input asp-for="State" class="form-control" />
-                <span asp-validation-for="State" class="text-danger"></span>
+            <div>
+                <label asp-for="State" class="block text-[13px] font-medium text-gray-700 mb-1.5">State <span class="text-red-500">*</span></label>
+                <input asp-for="State" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+                <span asp-validation-for="State" class="text-xs text-red-500 mt-1 block"></span>
             </div>
-            <div class="col mb-3">
-                <label asp-for="ZipCode" class="form-label"></label>
-                <input asp-for="ZipCode" class="form-control" />
-                <span asp-validation-for="ZipCode" class="text-danger"></span>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col mb-3">
-                <label asp-for="LandlordName" class="form-label"></label>
-                <input asp-for="LandlordName" class="form-control" />
-                <span asp-validation-for="LandlordName" class="text-danger"></span>
-            </div>
-            <div class="col mb-3">
-                <label asp-for="LandlordPhone" class="form-label"></label>
-                <input asp-for="LandlordPhone" class="form-control" />
-                <span asp-validation-for="LandlordPhone" class="text-danger"></span>
+            <div>
+                <label asp-for="ZipCode" class="block text-[13px] font-medium text-gray-700 mb-1.5">ZIP <span class="text-red-500">*</span></label>
+                <input asp-for="ZipCode" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+                <span asp-validation-for="ZipCode" class="text-xs text-red-500 mt-1 block"></span>
             </div>
         </div>
-        <div class="row">
-            <div class="col mb-3">
-                <label asp-for="MoveInDate" class="form-label"></label>
-                <input asp-for="MoveInDate" class="form-control" />
-                <span asp-validation-for="MoveInDate" class="text-danger"></span>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label asp-for="LandlordName" class="block text-[13px] font-medium text-gray-700 mb-1.5">Landlord Name <span class="text-red-500">*</span></label>
+                <input asp-for="LandlordName" placeholder="Robert Williams" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+                <span asp-validation-for="LandlordName" class="text-xs text-red-500 mt-1 block"></span>
             </div>
-            <div class="col mb-3">
-                <label asp-for="MoveOutDate" class="form-label"></label>
-                <input asp-for="MoveOutDate" class="form-control" />
-                <div class="form-text">Leave blank if this is your current residence.</div>
-                <span asp-validation-for="MoveOutDate" class="text-danger"></span>
+            <div>
+                <label asp-for="LandlordPhone" class="block text-[13px] font-medium text-gray-700 mb-1.5">Landlord Phone <span class="text-red-500">*</span></label>
+                <input asp-for="LandlordPhone" placeholder="(555) 987-6543" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+                <span asp-validation-for="LandlordPhone" class="text-xs text-red-500 mt-1 block"></span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label asp-for="MoveInDate" class="block text-[13px] font-medium text-gray-700 mb-1.5">Move-in Date <span class="text-red-500">*</span></label>
+                <input asp-for="MoveInDate" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+                <span asp-validation-for="MoveInDate" class="text-xs text-red-500 mt-1 block"></span>
+            </div>
+            <div>
+                <label asp-for="MoveOutDate" class="block text-[13px] font-medium text-gray-700 mb-1.5">Move-out Date</label>
+                <input asp-for="MoveOutDate" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+                <p class="text-xs text-gray-400 mt-1">Leave blank if this is your current residence.</p>
+                <span asp-validation-for="MoveOutDate" class="text-xs text-red-500 mt-1 block"></span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label asp-for="MonthlyRent" class="block text-[13px] font-medium text-gray-700 mb-1.5">Monthly Rent <span class="text-red-500">*</span></label>
+                <input asp-for="MonthlyRent" type="number" step="0.01" min="0.01" placeholder="1200" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+                <span asp-validation-for="MonthlyRent" class="text-xs text-red-500 mt-1 block"></span>
+            </div>
+            <div>
+                <label asp-for="ReasonForLeaving" class="block text-[13px] font-medium text-gray-700 mb-1.5">Reason for Leaving</label>
+                <input asp-for="ReasonForLeaving" placeholder="N/A if current" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+                <span asp-validation-for="ReasonForLeaving" class="text-xs text-red-500 mt-1 block"></span>
             </div>
         </div>
     </div>
-    <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-primary">Save</button>
+
+    <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-200">
+        <button type="button" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-md transition-colors" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-md transition-colors">Save</button>
     </div>
 </form>

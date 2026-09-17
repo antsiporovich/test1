@@ -1,87 +1,160 @@
 @model PropertyManagement.Web.Models.ApplicationWizardViewModel
 @{
     ViewData["Title"] = "Rental Application";
+    var steps = new[] { ("Applicant Information", WizardStep.ApplicantInformation), ("Residence History", WizardStep.ResidenceHistory), ("Summary", WizardStep.Summary) };
+    var currentIndex = Array.FindIndex(steps, s => s.Item2 == Model.CurrentStep);
 }
 
-@Html.AntiForgeryToken()
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-<h1>Rental Application</h1>
-<p class="text-muted">Status: <span class="badge text-bg-secondary">@Model.Status</span></p>
+    <div class="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8">
 
-@if (Model.ReturnComment is not null)
-{
-    <div class="alert alert-warning">
-        <strong>Returned for correction:</strong> @Model.ReturnComment
+        <div class="flex items-start justify-between gap-4 mb-8">
+            <div>
+                <h1 class="text-3xl font-extrabold text-ink mb-1">Rental Application</h1>
+                @if (!string.IsNullOrEmpty(Model.ApplyingForLabel))
+                {
+                    <p class="text-sm text-muted">Applying for @Model.ApplyingForLabel</p>
+                }
+            </div>
+            @if (Model.IsWithdrawable)
+            {
+                <form asp-controller="Applications" asp-action="Withdraw" asp-route-id="@Model.ApplicationId" method="post"
+                      onsubmit="return confirm('Withdraw this application?');" class="shrink-0">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors">
+                        Withdraw application
+                    </button>
+                </form>
+            }
+        </div>
+
+        <div class="flex items-center mb-10">
+            @for (var i = 0; i < steps.Length; i++)
+            {
+                var isComplete = i < currentIndex;
+                var isActive = i == currentIndex;
+                var isLast = i == steps.Length - 1;
+                var circleClass = isComplete || isActive
+                    ? "bg-brand-600 text-white"
+                    : "bg-white border-2 border-gray-200 text-gray-400";
+                var labelClass = isActive
+                    ? "text-ink font-medium"
+                    : isComplete
+                        ? "text-gray-600 font-medium"
+                        : "text-gray-400 font-medium";
+                <div class="flex flex-col items-center @(isLast ? "" : "flex-1")">
+                    <div class="flex items-center w-full">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 @circleClass">
+                            @if (isComplete)
+                            {
+                                <i data-lucide="check" class="w-3.5 h-3.5" stroke-width="3" aria-hidden="true"></i>
+                            }
+                            else
+                            {
+                                @(i + 1)
+                            }
+                        </div>
+                        @if (!isLast)
+                        {
+                            <div class="flex-1 h-0.5 mx-2 @(i < currentIndex ? "bg-brand-600" : "bg-gray-200")"></div>
+                        }
+                    </div>
+                    <span class="text-xs mt-2 whitespace-nowrap @labelClass">@steps[i].Item1</span>
+                </div>
+            }
+        </div>
+
+        @if (Model.CurrentStep == WizardStep.ApplicantInformation)
+        {
+            <h2 class="text-base font-bold text-ink mb-1">Applicant Information</h2>
+            <p class="text-sm text-muted mb-6">Please provide your personal information.</p>
+        }
+        else if (Model.CurrentStep != WizardStep.ResidenceHistory)
+        {
+            <h2 class="text-base font-bold text-ink mb-1">Summary</h2>
+            <p class="text-sm text-muted mb-6">Review your application before submitting. Both sections must be complete.</p>
+        }
+
+        @if (Model.ReturnComment is not null)
+        {
+            <div class="mb-6 flex items-start gap-3 px-4 py-3.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-sm">
+                <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true"></i>
+                <div>
+                    <p class="font-semibold">This application was returned</p>
+                    <p class="mt-0.5">Please make the requested changes below and resubmit.</p>
+                    <p class="mt-1.5"><span class="font-medium">Manager comment:</span> &ldquo;@Model.ReturnComment&rdquo;</p>
+                </div>
+            </div>
+        }
+
+        @if (Model.SubmitError is not null)
+        {
+            <div class="mb-6 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">@Model.SubmitError</div>
+        }
+
+        @if (Model.ConcurrencyError is not null)
+        {
+            <div class="mb-6 px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-sm">@Model.ConcurrencyError</div>
+        }
+
+        <form id="wizardForm" method="post" asp-controller="Applications" asp-action="Wizard" asp-route-id="@Model.ApplicationId">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="CurrentStep" />
+
+            @if (Model.CurrentStep == WizardStep.ApplicantInformation)
+            {
+                <partial name="_ApplicantInformationSection" for="ApplicantInformation" />
+            }
+            else if (Model.CurrentStep == WizardStep.ResidenceHistory)
+            {
+                <div id="residenceHistoryRegion">
+                    @await Component.InvokeAsync("ResidenceHistorySection", new { applicationId = Model.ApplicationId, isEditable = Model.IsEditable })
+                </div>
+            }
+            else
+            {
+                <partial name="_Summary" model="Model" />
+            }
+
+            @if (Model.IsEditable)
+            {
+                <div class="flex items-center justify-between pt-6 mt-8 border-t border-gray-100">
+                    <div>
+                        @if (Model.CurrentStep != WizardStep.ApplicantInformation)
+                        {
+                            <button type="submit" name="command" value="Back"
+                                    class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-md transition-colors">
+                                Back
+                            </button>
+                        }
+                    </div>
+                    <div>
+                        @if (Model.CurrentStep == WizardStep.Summary)
+                        {
+                            <button type="submit" name="command" value="Submit"
+                                    disabled="@(Model.OutstandingErrors.Count > 0)"
+                                    class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-brand-600">
+                                Submit Application
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="submit" name="command" value="Continue"
+                                    class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-md transition-colors">
+                                Continue
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </form>
     </div>
-}
-
-@if (Model.SubmitError is not null)
-{
-    <div class="alert alert-danger">@Model.SubmitError</div>
-}
-
-@if (Model.ConcurrencyError is not null)
-{
-    <div class="alert alert-warning">@Model.ConcurrencyError</div>
-}
-
-<form id="wizardForm" method="post" asp-controller="Applications" asp-action="Wizard" asp-route-id="@Model.ApplicationId">
-    @Html.AntiForgeryToken()
-    <input type="hidden" asp-for="CurrentStep" />
-
-    @if (Model.CurrentStep == WizardStep.ApplicantInformation)
-    {
-        <partial name="_ApplicantInformationSection" for="ApplicantInformation" />
-    }
-    else if (Model.CurrentStep == WizardStep.ResidenceHistory)
-    {
-        <div id="residenceHistoryRegion">
-            @await Component.InvokeAsync("ResidenceHistorySection", new { applicationId = Model.ApplicationId, isEditable = Model.IsEditable })
-        </div>
-    }
-    else
-    {
-        <partial name="_Summary" model="Model" />
-    }
-
-    @if (Model.IsEditable)
-    {
-        <div class="d-flex justify-content-between mt-3">
-            <div>
-                @if (Model.CurrentStep != WizardStep.ApplicantInformation)
-                {
-                    <button type="submit" name="command" value="Back" class="btn btn-secondary">Back</button>
-                }
-            </div>
-            <div>
-                @if (Model.CurrentStep == WizardStep.Summary)
-                {
-                    <button type="submit" name="command" value="Submit" class="btn btn-primary" disabled="@(Model.OutstandingErrors.Count > 0)">Submit</button>
-                }
-                else
-                {
-                    <button type="submit" name="command" value="Continue" class="btn btn-primary">Continue</button>
-                }
-            </div>
-        </div>
-    }
-</form>
-
-@if (Model.IsWithdrawable)
-{
-    <form asp-controller="Applications" asp-action="Withdraw" asp-route-id="@Model.ApplicationId" method="post" class="mt-2"
-          onsubmit="return confirm('Withdraw this application?');">
-        <button type="submit" class="btn btn-outline-secondary btn-sm">Withdraw application</button>
-    </form>
-}
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        // Bonus 4 (Features/13, VALID-1): Continue must reach the server even with
-        // invalid fields, so a section can be saved-as-is and the wizard still
-        // advances. Field-level (blur/keyup) hints stay on; only submit-time
-        // blocking is disabled so jquery-validate never intercepts the POST.
         $(function () {
             var validator = $('#wizardForm').data('validator');
             if (validator) {

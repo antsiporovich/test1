@@ -16,6 +16,10 @@ public class ApplicantInformationValidatorTests
         City = "Springfield",
         State = "IL",
         ZipCode = "62704",
+        DateOfBirth = new DateOnly(1990, 3, 14),
+        Employment = "Marketing Specialist",
+        AnnualIncome = 72000m,
+        DesiredMoveInDate = new DateOnly(2024, 6, 1),
     };
 
     [Fact]

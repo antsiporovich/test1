@@ -2,50 +2,66 @@
 @* REVIEW-1: modal partial — returned by GET /Applications/{id}/Review and re-rendered
    in-place by ajaxModal.js when the POST fails validation. *@
 
-<div class="modal-header">
-    <h5 class="modal-title">Review Application</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<div class="flex items-start justify-between px-6 py-4 border-b border-gray-200">
+    <div>
+        <h5 class="text-base font-bold text-ink">Review Application</h5>
+        <p class="text-xs text-muted mt-0.5">Choose a decision and add an optional comment.</p>
+    </div>
+    <button type="button" class="text-gray-400 hover:text-gray-600 transition-colors" data-bs-dismiss="modal" aria-label="Close">
+        <i data-lucide="x" class="w-5 h-5" aria-hidden="true"></i>
+    </button>
 </div>
+
 <form method="post" asp-controller="Applications" asp-action="Review" asp-route-id="@Model.ApplicationId">
     @Html.AntiForgeryToken()
     <input type="hidden" asp-for="ApplicationId" />
-    <div class="modal-body">
-        <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+    <div class="px-6 py-5 space-y-4">
+        <div asp-validation-summary="ModelOnly" class="px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm empty:hidden" role="alert"></div>
 
-        <fieldset class="mb-3">
-            <legend class="col-form-label pt-0 fw-semibold">Outcome</legend>
-            <div class="form-check">
-                <input class="form-check-input" type="radio" asp-for="Outcome"
-                       id="outcomeApprove" value="Approve" />
-                <label class="form-check-label text-success fw-semibold" for="outcomeApprove">Approve</label>
-                <div class="form-text">Issues a 12-month lease for the unit.</div>
+        <div class="bg-gray-50 rounded-lg px-4 py-3 text-xs">
+            <p class="font-semibold text-ink">@Model.ApplicantName</p>
+            @if (!string.IsNullOrEmpty(Model.ApplicantEmail) || !string.IsNullOrEmpty(Model.ApplicantPhone))
+            {
+                <p class="text-muted">@Model.ApplicantEmail@(string.IsNullOrEmpty(Model.ApplicantPhone) ? "" : $" · {Model.ApplicantPhone}")</p>
+            }
+            <p class="text-muted mt-1">@Model.PropertyUnit</p>
+        </div>
+
+        <fieldset>
+            <legend class="text-[13px] font-medium text-gray-700 mb-2">Your Decision</legend>
+            <div class="space-y-2">
+                <label class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 has-[:checked]:border-brand-200 has-[:checked]:bg-brand-50">
+                    <input type="radio" asp-for="Outcome" value="Approve"
+                           class="w-4 h-4 accent-brand-600 border-gray-300 focus:ring-brand-600" />
+                    <span class="text-sm font-medium text-gray-700">Approve</span>
+                </label>
+                <label class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 has-[:checked]:border-brand-200 has-[:checked]:bg-brand-50">
+                    <input type="radio" asp-for="Outcome" value="Return"
+                           class="w-4 h-4 accent-brand-600 border-gray-300 focus:ring-brand-600" />
+                    <span class="text-sm font-medium text-gray-700">Return for Correction</span>
+                </label>
+                <label class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 has-[:checked]:border-brand-200 has-[:checked]:bg-brand-50">
+                    <input type="radio" asp-for="Outcome" value="Deny"
+                           class="w-4 h-4 accent-brand-600 border-gray-300 focus:ring-brand-600" />
+                    <span class="text-sm font-medium text-gray-700">Deny</span>
+                </label>
             </div>
-            <div class="form-check mt-2">
-                <input class="form-check-input" type="radio" asp-for="Outcome"
-                       id="outcomeReturn" value="Return" />
-                <label class="form-check-label text-warning-emphasis fw-semibold" for="outcomeReturn">Return for Correction</label>
-                <div class="form-text">Sends the application back to the applicant.</div>
-            </div>
-            <div class="form-check mt-2">
-                <input class="form-check-input" type="radio" asp-for="Outcome"
-                       id="outcomeDeny" value="Deny" />
-                <label class="form-check-label text-danger fw-semibold" for="outcomeDeny">Deny</label>
-                <div class="form-text">Terminates the application permanently.</div>
-            </div>
-            <span asp-validation-for="Outcome" class="text-danger small"></span>
+            <span asp-validation-for="Outcome" class="text-xs text-red-500 mt-2 block"></span>
         </fieldset>
 
-        <div class="mb-3">
-            <label asp-for="Comment" class="form-label">
-                Comment <span class="text-muted">(required for Return and Deny)</span>
-            </label>
-            <textarea asp-for="Comment" class="form-control" rows="4"
-                      placeholder="Enter your review comments…"></textarea>
-            <span asp-validation-for="Comment" class="text-danger small"></span>
+        <div>
+            <label asp-for="Comment" class="block text-[13px] font-medium text-gray-700 mb-1.5">Comments (Optional)</label>
+            <textarea asp-for="Comment" rows="3" maxlength="2000" data-counter="reviewCommentCount"
+                      placeholder="Add a comment for the applicant or your records…"
+                      class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors resize-none"></textarea>
+            <div class="flex items-center justify-between mt-1">
+                <span asp-validation-for="Comment" class="text-xs text-red-500"></span>
+                <span id="reviewCommentCount" class="text-xs text-gray-400 ml-auto">0 / 2000</span>
+            </div>
         </div>
     </div>
-    <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-primary">Submit Review</button>
+    <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200">
+        <button type="button" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-md transition-colors" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-md transition-colors">Submit Review</button>
     </div>
 </form>

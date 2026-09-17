@@ -6,6 +6,8 @@ namespace PropertyManagement.Web.Models;
 public class ApplicationWizardViewModel
 {
     public int ApplicationId { get; set; }
+    /// <summary>e.g. "Maple Grove — Unit 101" for the wizard subtitle.</summary>
+    public string ApplyingForLabel { get; set; } = "";
     public WizardStep CurrentStep { get; set; }
     public bool IsEditable { get; set; }
     public bool IsWithdrawable { get; set; }

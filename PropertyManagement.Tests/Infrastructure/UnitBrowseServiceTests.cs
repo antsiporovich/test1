@@ -54,6 +54,30 @@ public class UnitBrowseServiceTests
     }
 
     [Fact]
+    public async Task GetAvailableUnits_ExcludesUnitsApplicantAlreadyHasOpenApplicationFor()
+    {
+        var (db, service, property, unitType) = CreateContext();
+        var openMine = AddUnit(db, property, unitType, "501");
+        var terminalMine = AddUnit(db, property, unitType, "502");
+        var openOther = AddUnit(db, property, unitType, "503");
+        var untouched = AddUnit(db, property, unitType, "504");
+        db.SaveChanges();
+
+        var draft = new Application { UnitId = openMine.Id, Status = ApplicationStatus.Draft, CreatedAtUtc = Now };
+        draft.Applicants.Add(new ApplicationApplicant { UserId = "userA", AddedAtUtc = Now });
+        var withdrawn = new Application { UnitId = terminalMine.Id, Status = ApplicationStatus.Withdrawn, CreatedAtUtc = Now };
+        withdrawn.Applicants.Add(new ApplicationApplicant { UserId = "userA", AddedAtUtc = Now });
+        var otherDraft = new Application { UnitId = openOther.Id, Status = ApplicationStatus.Draft, CreatedAtUtc = Now };
+        otherDraft.Applicants.Add(new ApplicationApplicant { UserId = "userB", AddedAtUtc = Now });
+        db.Applications.AddRange(draft, withdrawn, otherDraft);
+        db.SaveChanges();
+
+        var result = await service.GetAvailableUnitsAsync("userA");
+
+        result.Select(u => u.UnitNumber).Should().BeEquivalentTo(["502", "503", "504"]);
+    }
+
+    [Fact]
     public async Task Apply_UnitNowUnavailable_IsRejectedAndCreatesNoApplication()
     {
         var (db, service, property, unitType) = CreateContext();

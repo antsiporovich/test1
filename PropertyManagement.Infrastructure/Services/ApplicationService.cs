@@ -29,6 +29,10 @@ public class ApplicationService(AppDbContext db, TimeProvider timeProvider) : IA
         info.City = input.City;
         info.State = input.State;
         info.ZipCode = input.ZipCode;
+        info.DateOfBirth = input.DateOfBirth;
+        info.Employment = input.Employment;
+        info.AnnualIncome = input.AnnualIncome;
+        info.DesiredMoveInDate = input.DesiredMoveInDate;
         info.UpdatedAtUtc = now;
 
         // MULTI-4: a brand-new row has no prior version to conflict with; only an
@@ -350,5 +354,7 @@ public class ApplicationService(AppDbContext db, TimeProvider timeProvider) : IA
         residence.LandlordPhone = input.LandlordPhone;
         residence.MoveInDate = input.MoveInDate;
         residence.MoveOutDate = input.MoveOutDate;
+        residence.MonthlyRent = input.MonthlyRent;
+        residence.ReasonForLeaving = input.ReasonForLeaving;
     }
 }

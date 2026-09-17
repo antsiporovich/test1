@@ -11,6 +11,7 @@ using PropertyManagement.Infrastructure.Data;
 using PropertyManagement.Infrastructure.Identity;
 using PropertyManagement.Infrastructure.Services;
 using PropertyManagement.Domain.Common;
+using PropertyManagement.Web.Helpers;
 using PropertyManagement.Web.Models;
 
 namespace PropertyManagement.Web.Controllers;
@@ -54,7 +55,7 @@ public class ApplicationsController(
                 .Select(a => new ReviewQueueRowViewModel
                 {
                     Id = a.Id,
-                    PropertyUnit = a.Unit.Property.Name + " — Unit " + a.Unit.UnitNumber,
+                    PropertyUnit = a.Unit.Property.Name + " — " + a.Unit.Property.AddressLine1 + ", " + a.Unit.Property.City + " · Unit " + a.Unit.UnitNumber,
                     Status = a.Status,
                     ClaimedByName = a.ClaimedByUserId == null ? null : userManager.Users.Where(u => u.Id == a.ClaimedByUserId).Select(u => u.DisplayName).FirstOrDefault(),
                     IsClaimedByMe = a.ClaimedByUserId == userId,
@@ -67,7 +68,7 @@ public class ApplicationsController(
 
     [HttpGet("{id:int}")]
     [Authorize(Roles = "Applicant")]
-    public async Task<IActionResult> Wizard(int id, CancellationToken ct)
+    public async Task<IActionResult> Wizard(int id, WizardStep? step, CancellationToken ct)
     {
         var application = await LoadOwnedApplicationAsync(id, ct);
         if (application is null)
@@ -75,7 +76,8 @@ public class ApplicationsController(
             return NotFound();
         }
 
-        var vm = await BuildWizardViewModelAsync(application, WizardStepRules.InitialStep(application), ct);
+        var targetStep = step ?? WizardStepRules.InitialStep(application);
+        var vm = await BuildWizardViewModelAsync(application, targetStep, ct);
         return View("Wizard", vm);
     }
 
@@ -462,7 +464,17 @@ public class ApplicationsController(
 
         if (!CanCurrentPmReview(application)) return Forbid();
 
-        return PartialView("_ReviewForm", new ReviewFormViewModel { ApplicationId = id });
+        var vm = new ReviewFormViewModel { ApplicationId = id };
+        PopulateReviewHeader(vm, application);
+        return PartialView("_ReviewForm", vm);
+    }
+
+    private static void PopulateReviewHeader(ReviewFormViewModel vm, Application application)
+    {
+        vm.ApplicantName = application.ApplicantInfo?.FullName is { Length: > 0 } name ? name : "Applicant";
+        vm.ApplicantEmail = application.ApplicantInfo?.Email ?? "";
+        vm.ApplicantPhone = application.ApplicantInfo?.Phone ?? "";
+        vm.PropertyUnit = $"{application.Unit.Property.Name} — Unit {application.Unit.UnitNumber}";
     }
 
     [HttpPost("{id:int}/Review")]
@@ -478,7 +490,10 @@ public class ApplicationsController(
         if (!CanCurrentPmReview(application)) return Forbid();
 
         if (!ModelState.IsValid)
+        {
+            PopulateReviewHeader(model, application);
             return PartialView("_ReviewForm", model);
+        }
 
         var actorId = userManager.GetUserId(User)!;
         ServiceResult<bool> result = model.Outcome switch
@@ -491,6 +506,7 @@ public class ApplicationsController(
 
         if (!result.Succeeded)
         {
+            PopulateReviewHeader(model, application);
             ModelState.AddModelError(string.Empty, result.Errors.Values.SelectMany(e => e).FirstOrDefault() ?? "Review could not be completed.");
             return PartialView("_ReviewForm", model);
         }
@@ -570,7 +586,7 @@ public class ApplicationsController(
     {
         var userId = userManager.GetUserId(User)!;
         return await db.Applications
-            .Include(a => a.Unit)
+            .Include(a => a.Unit).ThenInclude(u => u.Property)
             .Include(a => a.ApplicantInfo)
             .Include(a => a.Residences)
             .Include(a => a.Applicants)
@@ -583,6 +599,7 @@ public class ApplicationsController(
     private async Task<Application?> LoadApplicationForPmAsync(int id, CancellationToken ct) =>
         await db.Applications
             .Include(a => a.Unit).ThenInclude(u => u.Property)
+            .Include(a => a.Unit).ThenInclude(u => u.UnitType)
             .Include(a => a.ApplicantInfo)
             .Include(a => a.Residences)
             .Include(a => a.Applicants)
@@ -613,12 +630,30 @@ public class ApplicationsController(
             .Select(u => u.DisplayName ?? u.Email ?? u.Id)
             .ToListAsync(ct);
 
+        var unit = application.Unit;
+        var property = unit.Property;
+        var primaryName = application.ApplicantInfo?.FullName is { Length: > 0 } n
+            ? n
+            : applicantNames.FirstOrDefault() ?? "—";
+
         return new ApplicationDetailViewModel
         {
             Id = application.Id,
-            PropertyUnit = $"{application.Unit.Property.Name} — Unit {application.Unit.UnitNumber}",
+            PropertyUnit = $"{property.Name} — Unit {unit.UnitNumber}",
             ApplicantNames = applicantNames.Count > 0 ? string.Join(", ", applicantNames) : "—",
             Status = application.Status.ToString(),
+            SubmittedAtUtc = application.SubmittedAtUtc,
+            PropertyName = property.Name,
+            PropertyAddressSummary = $"{property.AddressLine1}, {property.City}",
+            PropertyImageUrl = PropertyImageUrls.PropertyExteriorImage(property.Id),
+            UnitNumber = unit.UnitNumber,
+            Bedrooms = unit.Bedrooms,
+            Bathrooms = unit.Bathrooms,
+            UnitTypeName = unit.UnitType?.Name,
+            PrimaryApplicantName = primaryName,
+            PrimaryApplicantEmail = application.ApplicantInfo?.Email ?? "",
+            PrimaryApplicantPhone = application.ApplicantInfo?.Phone ?? "",
+            PrimaryApplicantInitials = InitialsFromName(primaryName),
             CanReview = CanCurrentPmReview(application),
             ApplicantInformation = MapApplicantInfo(application.ApplicantInfo),
             Residences = application.Residences
@@ -635,6 +670,8 @@ public class ApplicationsController(
                     LandlordPhone = r.LandlordPhone,
                     MoveInDate = r.MoveInDate,
                     MoveOutDate = r.MoveOutDate,
+                    MonthlyRent = r.MonthlyRent,
+                    ReasonForLeaving = r.ReasonForLeaving,
                 })
                 .ToList(),
             StatusHistory = application.StatusHistory
@@ -684,6 +721,7 @@ public class ApplicationsController(
         var vm = new ApplicationWizardViewModel
         {
             ApplicationId = application.Id,
+            ApplyingForLabel = $"{application.Unit.Property.Name} — Unit {application.Unit.UnitNumber}",
             CurrentStep = step,
             IsEditable = application.Status.IsEditable(),
             IsWithdrawable = !application.Status.IsTerminal(),
@@ -726,6 +764,8 @@ public class ApplicationsController(
                 LandlordPhone = r.LandlordPhone,
                 MoveInDate = r.MoveInDate,
                 MoveOutDate = r.MoveOutDate,
+                MonthlyRent = r.MonthlyRent,
+                ReasonForLeaving = r.ReasonForLeaving,
             }).ToList();
         }
 
@@ -744,6 +784,10 @@ public class ApplicationsController(
             City = info.City,
             State = info.State,
             ZipCode = info.ZipCode,
+            DateOfBirth = info.DateOfBirth,
+            Employment = info.Employment,
+            AnnualIncome = info.AnnualIncome,
+            DesiredMoveInDate = info.DesiredMoveInDate,
             RowVersion = info.RowVersion,
         };
 
@@ -760,6 +804,8 @@ public class ApplicationsController(
         LandlordPhone = residence.LandlordPhone,
         MoveInDate = residence.MoveInDate,
         MoveOutDate = residence.MoveOutDate,
+        MonthlyRent = residence.MonthlyRent,
+        ReasonForLeaving = residence.ReasonForLeaving,
         RowVersion = residence.RowVersion,
     };
 
@@ -768,8 +814,19 @@ public class ApplicationsController(
     // when invalid, so a blank field must still land as "" in the NOT NULL columns
     // below, not a runtime null the compile-time non-nullable annotations don't catch.
     private static ApplicantInfoInput ToInput(ApplicantInfoSectionViewModel model) =>
-        new(model.FullName ?? "", model.Phone ?? "", model.Email ?? "", model.AddressLine1 ?? "", model.AddressLine2, model.City ?? "", model.State ?? "", model.ZipCode ?? "", model.RowVersion);
+        new(model.FullName ?? "", model.Phone ?? "", model.Email ?? "", model.AddressLine1 ?? "", model.AddressLine2, model.City ?? "", model.State ?? "", model.ZipCode ?? "", model.DateOfBirth, model.Employment, model.AnnualIncome, model.DesiredMoveInDate, model.RowVersion);
 
     private static ResidenceInput ToInput(ResidenceFormViewModel model) =>
-        new(model.AddressLine1, model.AddressLine2, model.City, model.State, model.ZipCode, model.LandlordName, model.LandlordPhone, model.MoveInDate, model.MoveOutDate, model.RowVersion);
+        new(model.AddressLine1, model.AddressLine2, model.City, model.State, model.ZipCode, model.LandlordName, model.LandlordPhone, model.MoveInDate, model.MoveOutDate, model.MonthlyRent, model.ReasonForLeaving, model.RowVersion);
+
+    private static string InitialsFromName(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length >= 2)
+        {
+            return $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant();
+        }
+
+        return parts.Length > 0 && parts[0].Length > 0 ? parts[0][0].ToString().ToUpperInvariant() : "?";
+    }
 }

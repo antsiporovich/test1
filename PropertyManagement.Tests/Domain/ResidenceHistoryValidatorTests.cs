@@ -17,7 +17,7 @@ public class ResidenceHistoryValidatorTests
     [Fact]
     public void Validate_MoveOutBeforeMoveIn_ReturnsError()
     {
-        var residence = new Residence { MoveInDate = new DateOnly(2024, 6, 1), MoveOutDate = new DateOnly(2024, 5, 1) };
+        var residence = new Residence { MoveInDate = new DateOnly(2024, 6, 1), MoveOutDate = new DateOnly(2024, 5, 1), MonthlyRent = 1200m };
 
         ResidenceHistoryValidator.Validate([residence]).Should().ContainSingle();
     }
@@ -25,7 +25,7 @@ public class ResidenceHistoryValidatorTests
     [Fact]
     public void Validate_MoveOutOnOrAfterMoveIn_ReturnsNoError()
     {
-        var residence = new Residence { MoveInDate = new DateOnly(2024, 6, 1), MoveOutDate = new DateOnly(2024, 6, 1) };
+        var residence = new Residence { MoveInDate = new DateOnly(2024, 6, 1), MoveOutDate = new DateOnly(2024, 6, 1), MonthlyRent = 1200m };
 
         ResidenceHistoryValidator.Validate([residence]).Should().BeEmpty();
     }
@@ -33,7 +33,7 @@ public class ResidenceHistoryValidatorTests
     [Fact]
     public void Validate_NullMoveOut_ReturnsNoError()
     {
-        var residence = new Residence { MoveInDate = new DateOnly(2024, 6, 1), MoveOutDate = null };
+        var residence = new Residence { MoveInDate = new DateOnly(2024, 6, 1), MoveOutDate = null, MonthlyRent = 1200m };
 
         ResidenceHistoryValidator.Validate([residence]).Should().BeEmpty();
     }
@@ -41,8 +41,8 @@ public class ResidenceHistoryValidatorTests
     [Fact]
     public void Validate_MultipleResidences_IdentifiesTheBadOneBySpecificItem()
     {
-        var good = new Residence { MoveInDate = new DateOnly(2020, 1, 1), MoveOutDate = new DateOnly(2021, 1, 1) };
-        var bad = new Residence { MoveInDate = new DateOnly(2022, 1, 1), MoveOutDate = new DateOnly(2021, 1, 1) };
+        var good = new Residence { MoveInDate = new DateOnly(2020, 1, 1), MoveOutDate = new DateOnly(2021, 1, 1), MonthlyRent = 1000m };
+        var bad = new Residence { MoveInDate = new DateOnly(2022, 1, 1), MoveOutDate = new DateOnly(2021, 1, 1), MonthlyRent = 1100m };
 
         var errors = ResidenceHistoryValidator.Validate([good, bad]).ToList();
 

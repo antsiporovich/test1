@@ -15,6 +15,8 @@ public class ResidenceConfiguration : IEntityTypeConfiguration<Residence>
         builder.Property(r => r.ZipCode).IsRequired().HasMaxLength(20);
         builder.Property(r => r.LandlordName).IsRequired().HasMaxLength(200);
         builder.Property(r => r.LandlordPhone).IsRequired().HasMaxLength(30);
+        builder.Property(r => r.MonthlyRent).HasPrecision(18, 2);
+        builder.Property(r => r.ReasonForLeaving).HasMaxLength(500);
 
         builder.Property(r => r.RowVersion).IsRowVersion();
 

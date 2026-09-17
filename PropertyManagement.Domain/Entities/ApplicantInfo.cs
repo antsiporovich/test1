@@ -21,6 +21,11 @@ public class ApplicantInfo
     public string State { get; set; } = string.Empty;
     public string ZipCode { get; set; } = string.Empty;
 
+    public DateOnly? DateOfBirth { get; set; }
+    public string? Employment { get; set; }
+    public decimal? AnnualIncome { get; set; }
+    public DateOnly? DesiredMoveInDate { get; set; }
+
     /// <summary>Also the "section saved" completion marker used by the Summary gate
     /// (Features/04, WIZ-4) — non-null once this row exists.</summary>
     public DateTimeOffset UpdatedAtUtc { get; set; }

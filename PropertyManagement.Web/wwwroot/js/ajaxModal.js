@@ -19,6 +19,28 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Generic char-counter init for any textarea[data-counter="<id-of-counter-el>"] —
+    // innerHTML-injected modal partials can't rely on their own <script> tags (browsers
+    // don't execute script inserted that way), so this lives here instead and is
+    // (re)run whenever modal content is (re)placed.
+    function initCounters(container) {
+        container.querySelectorAll('textarea[data-counter]').forEach(function (ta) {
+            var counterEl = document.getElementById(ta.dataset.counter);
+            if (counterEl) {
+                counterEl.textContent = ta.value.length + ' / ' + (ta.getAttribute('maxlength') || '');
+            }
+        });
+    }
+
+    document.addEventListener('input', function (e) {
+        if (e.target.matches && e.target.matches('textarea[data-counter]')) {
+            var counterEl = document.getElementById(e.target.dataset.counter);
+            if (counterEl) {
+                counterEl.textContent = e.target.value.length + ' / ' + (e.target.getAttribute('maxlength') || '');
+            }
+        }
+    });
+
     function refreshRegion(url, targetSelector) {
         if (!url || !targetSelector) {
             return Promise.resolve();
@@ -42,6 +64,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(function (html) {
                 modalBody.innerHTML = html;
                 parseUnobtrusiveValidation(modalBody);
+                initCounters(modalBody);
                 bsModal.show();
             });
     }
@@ -110,6 +133,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return response.text().then(function (html) {
                 modalBody.innerHTML = html;
                 parseUnobtrusiveValidation(modalBody);
+                initCounters(modalBody);
             });
         });
     });

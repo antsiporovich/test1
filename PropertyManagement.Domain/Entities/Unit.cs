@@ -9,6 +9,7 @@ public class Unit
 
     public string UnitNumber { get; set; } = string.Empty;
     public int Bedrooms { get; set; }
+    public int Bathrooms { get; set; }
     public decimal MonthlyRent { get; set; }
 
     public int UnitTypeId { get; set; }

@@ -169,13 +169,27 @@ namespace PropertyManagement.Infrastructure.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<decimal?>("AnnualIncome")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("City")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<DateOnly?>("DateOfBirth")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("DesiredMoveInDate")
+                        .HasColumnType("date");
+
                     b.Property<string>("Email")
                         .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Employment")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
@@ -480,11 +494,19 @@ namespace PropertyManagement.Infrastructure.Data.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<decimal?>("MonthlyRent")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<DateOnly>("MoveInDate")
                         .HasColumnType("date");
 
                     b.Property<DateOnly?>("MoveOutDate")
                         .HasColumnType("date");
+
+                    b.Property<string>("ReasonForLeaving")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -516,6 +538,9 @@ namespace PropertyManagement.Infrastructure.Data.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Bathrooms")
+                        .HasColumnType("int");
 
                     b.Property<int>("Bedrooms")
                         .HasColumnType("int");

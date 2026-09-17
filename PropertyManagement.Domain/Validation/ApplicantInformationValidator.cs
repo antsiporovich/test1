@@ -65,5 +65,25 @@ public static class ApplicantInformationValidator
         {
             yield return new FieldError(nameof(info.ZipCode), "ZIP code is required.");
         }
+
+        if (info.DateOfBirth is null)
+        {
+            yield return new FieldError(nameof(info.DateOfBirth), "Date of birth is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(info.Employment))
+        {
+            yield return new FieldError(nameof(info.Employment), "Employment is required.");
+        }
+
+        if (info.AnnualIncome is null || info.AnnualIncome <= 0)
+        {
+            yield return new FieldError(nameof(info.AnnualIncome), "Annual income is required.");
+        }
+
+        if (info.DesiredMoveInDate is null)
+        {
+            yield return new FieldError(nameof(info.DesiredMoveInDate), "Move-in date is required.");
+        }
     }
 }

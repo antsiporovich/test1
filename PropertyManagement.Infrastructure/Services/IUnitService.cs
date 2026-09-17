@@ -3,7 +3,7 @@ using PropertyManagement.Domain.Entities;
 
 namespace PropertyManagement.Infrastructure.Services;
 
-public record UnitInput(int PropertyId, string UnitNumber, int Bedrooms, decimal MonthlyRent, int UnitTypeId);
+public record UnitInput(int PropertyId, string UnitNumber, int Bedrooms, int Bathrooms, decimal MonthlyRent, int UnitTypeId);
 
 public interface IUnitService
 {

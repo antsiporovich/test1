@@ -43,4 +43,25 @@ public class ApplicantInfoSectionViewModel
     [StringLength(20)]
     [Display(Name = "ZIP code")]
     public string ZipCode { get; set; } = string.Empty;
+
+    [Required]
+    [Display(Name = "Date of birth")]
+    [DataType(DataType.Date)]
+    public DateOnly? DateOfBirth { get; set; }
+
+    [Required]
+    [StringLength(200)]
+    [Display(Name = "Employment")]
+    public string? Employment { get; set; }
+
+    [Required]
+    [Range(0.01, 10_000_000)]
+    [Display(Name = "Annual income")]
+    [DataType(DataType.Currency)]
+    public decimal? AnnualIncome { get; set; }
+
+    [Required]
+    [Display(Name = "Move-in date")]
+    [DataType(DataType.Date)]
+    public DateOnly? DesiredMoveInDate { get; set; }
 }

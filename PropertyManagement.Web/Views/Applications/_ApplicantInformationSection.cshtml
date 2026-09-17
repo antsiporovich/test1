@@ -1,49 +1,80 @@
 @model PropertyManagement.Web.Models.ApplicantInfoSectionViewModel
 
-<h2 class="h4">Applicant Information</h2>
 <input type="hidden" asp-for="RowVersion" />
 
-<div class="mb-3">
-    <label asp-for="FullName" class="form-label"></label>
-    <input asp-for="FullName" class="form-control" />
-    <span asp-validation-for="FullName" class="text-danger"></span>
-</div>
-<div class="row">
-    <div class="col mb-3">
-        <label asp-for="Phone" class="form-label"></label>
-        <input asp-for="Phone" class="form-control" />
-        <span asp-validation-for="Phone" class="text-danger"></span>
+<div class="space-y-5">
+    <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+            <label asp-for="FullName" class="block text-[13px] font-medium text-gray-700 mb-1.5">Full Name <span class="text-red-500">*</span></label>
+            <input asp-for="FullName" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+            <span asp-validation-for="FullName" class="text-xs text-red-500 mt-1 block"></span>
+        </div>
+        <div>
+            <label asp-for="Phone" class="block text-[13px] font-medium text-gray-700 mb-1.5">Phone <span class="text-red-500">*</span></label>
+            <input asp-for="Phone" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+            <span asp-validation-for="Phone" class="text-xs text-red-500 mt-1 block"></span>
+        </div>
     </div>
-    <div class="col mb-3">
-        <label asp-for="Email" class="form-label"></label>
-        <input asp-for="Email" class="form-control" />
-        <span asp-validation-for="Email" class="text-danger"></span>
+
+    <div>
+        <label asp-for="Email" class="block text-[13px] font-medium text-gray-700 mb-1.5">Email <span class="text-red-500">*</span></label>
+        <input asp-for="Email" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+        <span asp-validation-for="Email" class="text-xs text-red-500 mt-1 block"></span>
     </div>
-</div>
-<div class="mb-3">
-    <label asp-for="AddressLine1" class="form-label"></label>
-    <input asp-for="AddressLine1" class="form-control" />
-    <span asp-validation-for="AddressLine1" class="text-danger"></span>
-</div>
-<div class="mb-3">
-    <label asp-for="AddressLine2" class="form-label"></label>
-    <input asp-for="AddressLine2" class="form-control" />
-    <span asp-validation-for="AddressLine2" class="text-danger"></span>
-</div>
-<div class="row">
-    <div class="col mb-3">
-        <label asp-for="City" class="form-label"></label>
-        <input asp-for="City" class="form-control" />
-        <span asp-validation-for="City" class="text-danger"></span>
+
+    <div>
+        <label asp-for="AddressLine1" class="block text-[13px] font-medium text-gray-700 mb-1.5">Current Address <span class="text-red-500">*</span></label>
+        <input asp-for="AddressLine1" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+        <span asp-validation-for="AddressLine1" class="text-xs text-red-500 mt-1 block"></span>
     </div>
-    <div class="col mb-3">
-        <label asp-for="State" class="form-label"></label>
-        <input asp-for="State" class="form-control" />
-        <span asp-validation-for="State" class="text-danger"></span>
+
+    <div>
+        <label asp-for="AddressLine2" class="block text-[13px] font-medium text-gray-700 mb-1.5">Address Line 2</label>
+        <input asp-for="AddressLine2" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+        <span asp-validation-for="AddressLine2" class="text-xs text-red-500 mt-1 block"></span>
     </div>
-    <div class="col mb-3">
-        <label asp-for="ZipCode" class="form-label"></label>
-        <input asp-for="ZipCode" class="form-control" />
-        <span asp-validation-for="ZipCode" class="text-danger"></span>
+
+    <div class="grid sm:grid-cols-3 gap-4">
+        <div>
+            <label asp-for="City" class="block text-[13px] font-medium text-gray-700 mb-1.5">City <span class="text-red-500">*</span></label>
+            <input asp-for="City" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+            <span asp-validation-for="City" class="text-xs text-red-500 mt-1 block"></span>
+        </div>
+        <div>
+            <label asp-for="State" class="block text-[13px] font-medium text-gray-700 mb-1.5">State <span class="text-red-500">*</span></label>
+            <input asp-for="State" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+            <span asp-validation-for="State" class="text-xs text-red-500 mt-1 block"></span>
+        </div>
+        <div>
+            <label asp-for="ZipCode" class="block text-[13px] font-medium text-gray-700 mb-1.5">ZIP Code <span class="text-red-500">*</span></label>
+            <input asp-for="ZipCode" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+            <span asp-validation-for="ZipCode" class="text-xs text-red-500 mt-1 block"></span>
+        </div>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+            <label asp-for="DateOfBirth" class="block text-[13px] font-medium text-gray-700 mb-1.5">Date of Birth <span class="text-red-500">*</span></label>
+            <input asp-for="DateOfBirth" type="date" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+            <span asp-validation-for="DateOfBirth" class="text-xs text-red-500 mt-1 block"></span>
+        </div>
+        <div>
+            <label asp-for="DesiredMoveInDate" class="block text-[13px] font-medium text-gray-700 mb-1.5">Desired Move-in Date <span class="text-red-500">*</span></label>
+            <input asp-for="DesiredMoveInDate" type="date" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+            <span asp-validation-for="DesiredMoveInDate" class="text-xs text-red-500 mt-1 block"></span>
+        </div>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+            <label asp-for="Employment" class="block text-[13px] font-medium text-gray-700 mb-1.5">Employment <span class="text-red-500">*</span></label>
+            <input asp-for="Employment" placeholder="Marketing Specialist" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+            <span asp-validation-for="Employment" class="text-xs text-red-500 mt-1 block"></span>
+        </div>
+        <div>
+            <label asp-for="AnnualIncome" class="block text-[13px] font-medium text-gray-700 mb-1.5">Annual Income <span class="text-red-500">*</span></label>
+            <input asp-for="AnnualIncome" type="number" step="0.01" min="0.01" placeholder="72000" class="w-full px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+            <span asp-validation-for="AnnualIncome" class="text-xs text-red-500 mt-1 block"></span>
+        </div>
     </div>
 </div>

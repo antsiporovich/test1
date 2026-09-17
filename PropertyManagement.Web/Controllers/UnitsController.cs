@@ -57,6 +57,7 @@ public class UnitsController(IUnitService unitService) : Controller
             PropertyId = propertyId,
             UnitNumber = unit.UnitNumber,
             Bedrooms = unit.Bedrooms,
+            Bathrooms = unit.Bathrooms,
             MonthlyRent = unit.MonthlyRent,
             UnitTypeId = unit.UnitTypeId,
         };
@@ -116,5 +117,5 @@ public class UnitsController(IUnitService unitService) : Controller
     }
 
     private static UnitInput ToInput(UnitFormViewModel model) =>
-        new(model.PropertyId, model.UnitNumber, model.Bedrooms, model.MonthlyRent, model.UnitTypeId!.Value);
+        new(model.PropertyId, model.UnitNumber, model.Bedrooms, model.Bathrooms, model.MonthlyRent, model.UnitTypeId!.Value);
 }

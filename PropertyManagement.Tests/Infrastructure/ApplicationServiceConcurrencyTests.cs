@@ -56,10 +56,10 @@ public class ApplicationServiceConcurrencyTests
     }
 
     private static ApplicantInfoInput ApplicantInput(string fullName, byte[] rowVersion) =>
-        new(fullName, "555-1234", "a@example.com", "1 Main St", null, "City", "ST", "00000", rowVersion);
+        new(fullName, "555-1234", "a@example.com", "1 Main St", null, "City", "ST", "00000", new DateOnly(1990, 1, 1), "Engineer", 72000m, new DateOnly(2024, 6, 1), rowVersion);
 
     private static ResidenceInput ResidenceInput(string landlordName, byte[] rowVersion) =>
-        new("1 Main St", null, "City", "ST", "00000", landlordName, "555-1234", new DateOnly(2020, 1, 1), null, rowVersion);
+        new("1 Main St", null, "City", "ST", "00000", landlordName, "555-1234", new DateOnly(2020, 1, 1), null, 1200m, null, rowVersion);
 
     [Fact]
     public async Task SaveApplicantInfo_SecondSaveAgainstStaleRowVersion_IsRejected()

@@ -18,6 +18,8 @@ public class ApplicantInfoConfiguration : IEntityTypeConfiguration<ApplicantInfo
         builder.Property(a => a.City).IsRequired().HasMaxLength(100);
         builder.Property(a => a.State).IsRequired().HasMaxLength(50);
         builder.Property(a => a.ZipCode).IsRequired().HasMaxLength(20);
+        builder.Property(a => a.Employment).HasMaxLength(200);
+        builder.Property(a => a.AnnualIncome).HasPrecision(18, 2);
 
         builder.Property(a => a.RowVersion).IsRowVersion();
 

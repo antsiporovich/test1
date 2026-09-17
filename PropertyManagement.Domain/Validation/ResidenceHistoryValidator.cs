@@ -19,6 +19,11 @@ public static class ResidenceHistoryValidator
             {
                 yield return new FieldError($"Residence {index}", "Move-out date cannot be before move-in date.");
             }
+
+            if (residence.MonthlyRent is null || residence.MonthlyRent <= 0)
+            {
+                yield return new FieldError($"Residence {index}", "Monthly rent is required.");
+            }
         }
     }
 }

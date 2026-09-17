@@ -24,5 +24,8 @@ public class Residence
     public DateOnly MoveInDate { get; set; }
     public DateOnly? MoveOutDate { get; set; }
 
+    public decimal? MonthlyRent { get; set; }
+    public string? ReasonForLeaving { get; set; }
+
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 }

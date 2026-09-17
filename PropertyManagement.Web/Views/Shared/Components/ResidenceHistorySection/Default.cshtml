@@ -1,67 +1,79 @@
 @model PropertyManagement.Web.Models.ResidenceHistoryListViewModel
 
-<h2 class="h4">Residence History</h2>
-<p class="text-muted small">Add any prior residences (optional) — you may continue with none listed.</p>
-
-@if (Model.IsEditable)
-{
-    <div class="d-flex justify-content-end mb-2">
-        <button type="button" class="btn btn-sm btn-primary"
+<div class="flex items-start justify-between gap-4 mb-4">
+    <div>
+        <h2 class="text-base font-bold text-ink mb-1">Residence History</h2>
+        <p class="text-sm text-muted">Please list your previous residences for the past 3 years.</p>
+    </div>
+    @if (Model.IsEditable)
+    {
+        <button type="button"
+                class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-md transition-colors whitespace-nowrap"
                 data-ajax-modal-url="@Url.Action("CreateResidenceForm", "Applications", new { applicationId = Model.ApplicationId })"
                 data-refresh-url="@Url.Action("ResidenceHistoryPartial", "Applications", new { applicationId = Model.ApplicationId })"
                 data-refresh-target="#residenceHistoryRegion">
+            <i data-lucide="plus" class="w-4 h-4" aria-hidden="true"></i>
             Add Residence
         </button>
-    </div>
-}
+    }
+</div>
 
 @if (Model.Residences.Count == 0)
 {
-    <p class="text-muted">No prior residences added yet.</p>
+    <div class="border border-gray-200 rounded-xl px-5 py-8 text-center mb-2">
+        <p class="text-sm text-gray-400">No prior residences added yet.</p>
+    </div>
 }
 else
 {
-    <table class="table table-sm align-middle">
-        <thead>
-            <tr>
-                <th>Address</th>
-                <th>Landlord</th>
-                <th>Move-in</th>
-                <th>Move-out</th>
-                @if (Model.IsEditable)
-                {
-                    <th></th>
-                }
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var r in Model.Residences)
-            {
-                <tr>
-                    <td>@r.AddressLine1, @r.City, @r.State @r.ZipCode</td>
-                    <td>@r.LandlordName (@r.LandlordPhone)</td>
-                    <td>@r.MoveInDate.ToString("d")</td>
-                    <td>@(r.MoveOutDate?.ToString("d") ?? "Current")</td>
-                    @if (Model.IsEditable)
+    <div class="border border-gray-200 rounded-xl overflow-hidden mb-2">
+        <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-200">
+                        <th class="text-left px-5 py-2.5 font-semibold text-gray-500">Dates</th>
+                        <th class="text-left px-5 py-2.5 font-semibold text-gray-500">Address</th>
+                        <th class="text-left px-5 py-2.5 font-semibold text-gray-500">Landlord</th>
+                        @if (Model.IsEditable)
+                        {
+                            <th class="text-right px-5 py-2.5 font-semibold text-gray-500">Actions</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Residences)
                     {
-                        <td class="text-end">
-                            <button type="button" class="btn btn-sm btn-outline-secondary"
-                                    data-ajax-modal-url="@Url.Action("EditResidenceForm", "Applications", new { applicationId = Model.ApplicationId, residenceId = r.Id })"
-                                    data-refresh-url="@Url.Action("ResidenceHistoryPartial", "Applications", new { applicationId = Model.ApplicationId })"
-                                    data-refresh-target="#residenceHistoryRegion">
-                                Edit
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-danger"
-                                    data-ajax-remove-url="@Url.Action("RemoveResidence", "Applications", new { applicationId = Model.ApplicationId, residenceId = r.Id })"
-                                    data-confirm="Remove this residence?"
-                                    data-refresh-url="@Url.Action("ResidenceHistoryPartial", "Applications", new { applicationId = Model.ApplicationId })"
-                                    data-refresh-target="#residenceHistoryRegion">
-                                Remove
-                            </button>
-                        </td>
+                        var dates = $"{r.MoveInDate:MMM yyyy} – {(r.MoveOutDate?.ToString("MMM yyyy") ?? "Present")}";
+                        var address = $"{r.AddressLine1}, {r.City}, {r.State}";
+                        var landlord = $"{r.LandlordName} · {r.LandlordPhone}";
+                        <tr class="border-b border-gray-100 last:border-0">
+                            <td class="px-5 py-2.5 text-gray-700">@dates</td>
+                            <td class="px-5 py-2.5 text-gray-700">@address</td>
+                            <td class="px-5 py-2.5 text-gray-700">@landlord</td>
+                            @if (Model.IsEditable)
+                            {
+                                <td class="px-5 py-2.5 text-right whitespace-nowrap space-x-2">
+                                    <button type="button"
+                                            class="inline-flex items-center justify-center w-[75px] py-1.5 border border-gray-300 text-gray-700 text-xs font-semibold rounded-md hover:bg-gray-50 transition-colors"
+                                            data-ajax-modal-url="@Url.Action("EditResidenceForm", "Applications", new { applicationId = Model.ApplicationId, residenceId = r.Id })"
+                                            data-refresh-url="@Url.Action("ResidenceHistoryPartial", "Applications", new { applicationId = Model.ApplicationId })"
+                                            data-refresh-target="#residenceHistoryRegion">
+                                        Edit
+                                    </button>
+                                    <button type="button"
+                                            class="inline-flex items-center justify-center w-[75px] py-1.5 border border-gray-300 text-red-600 text-xs font-semibold rounded-md hover:bg-red-50 transition-colors"
+                                            data-ajax-remove-url="@Url.Action("RemoveResidence", "Applications", new { applicationId = Model.ApplicationId, residenceId = r.Id })"
+                                            data-confirm="Remove this residence?"
+                                            data-refresh-url="@Url.Action("ResidenceHistoryPartial", "Applications", new { applicationId = Model.ApplicationId })"
+                                            data-refresh-target="#residenceHistoryRegion">
+                                        Remove
+                                    </button>
+                                </td>
+                            }
+                        </tr>
                     }
-                </tr>
-            }
-        </tbody>
-    </table>
+                </tbody>
+            </table>
+        </div>
+    </div>
 }

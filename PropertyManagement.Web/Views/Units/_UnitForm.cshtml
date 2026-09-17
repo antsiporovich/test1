@@ -6,44 +6,60 @@
         : Url.Action("Create", "Units", new { propertyId = Model.PropertyId });
 }
 
-<div class="modal-header">
-    <h5 class="modal-title">@(isEdit ? "Edit unit" : "Add unit")</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+    <h5 class="text-base font-bold text-ink">@(isEdit ? "Edit Unit" : "Add Unit")</h5>
+    <button type="button" class="text-gray-400 hover:text-gray-600 transition-colors -mr-1" data-bs-dismiss="modal" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
 </div>
 <form method="post" action="@actionUrl">
     @Html.AntiForgeryToken()
-    <div class="modal-body">
-        <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+    <div class="px-6 py-5 space-y-3.5">
+        <div asp-validation-summary="ModelOnly" class="px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm empty:hidden" role="alert"></div>
         <input type="hidden" asp-for="Id" />
         <input type="hidden" asp-for="PropertyId" />
 
-        <div class="mb-3">
-            <label asp-for="UnitNumber" class="form-label"></label>
-            <input asp-for="UnitNumber" class="form-control" />
-            <span asp-validation-for="UnitNumber" class="text-danger"></span>
+        <div>
+            <label asp-for="UnitNumber" class="block text-[13px] font-medium text-gray-700 mb-1.5">Unit Number <span class="text-red-500">*</span></label>
+            <input asp-for="UnitNumber" placeholder="A" class="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+            <span asp-validation-for="UnitNumber" class="text-xs text-red-500 mt-1 block"></span>
         </div>
-        <div class="row">
-            <div class="col mb-3">
-                <label asp-for="Bedrooms" class="form-label"></label>
-                <input asp-for="Bedrooms" class="form-control" type="number" min="0" />
-                <span asp-validation-for="Bedrooms" class="text-danger"></span>
-            </div>
-            <div class="col mb-3">
-                <label asp-for="MonthlyRent" class="form-label"></label>
-                <input asp-for="MonthlyRent" class="form-control" type="number" step="0.01" min="0.01" />
-                <span asp-validation-for="MonthlyRent" class="text-danger"></span>
-            </div>
+        <div>
+            <label asp-for="Bedrooms" class="block text-[13px] font-medium text-gray-700 mb-1.5">Bedrooms <span class="text-red-500">*</span></label>
+            <select asp-for="Bedrooms" class="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors">
+                @for (int b = 0; b <= 10; b++)
+                {
+                    <option value="@b">@b</option>
+                }
+            </select>
+            <span asp-validation-for="Bedrooms" class="text-xs text-red-500 mt-1 block"></span>
         </div>
-        <div class="mb-3">
-            <label asp-for="UnitTypeId" class="form-label"></label>
-            <select asp-for="UnitTypeId" asp-items="Model.UnitTypeOptions" class="form-select">
+        <div>
+            <label asp-for="Bathrooms" class="block text-[13px] font-medium text-gray-700 mb-1.5">Bathrooms <span class="text-red-500">*</span></label>
+            <select asp-for="Bathrooms" class="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors">
+                @for (int b = 0; b <= 10; b++)
+                {
+                    <option value="@b">@b</option>
+                }
+            </select>
+            <span asp-validation-for="Bathrooms" class="text-xs text-red-500 mt-1 block"></span>
+        </div>
+        <div>
+            <label asp-for="MonthlyRent" class="block text-[13px] font-medium text-gray-700 mb-1.5">Monthly Rent <span class="text-red-500">*</span></label>
+            <input asp-for="MonthlyRent" type="number" step="0.01" min="0.01" placeholder="1500" class="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors" />
+            <span asp-validation-for="MonthlyRent" class="text-xs text-red-500 mt-1 block"></span>
+        </div>
+        <div>
+            <label asp-for="UnitTypeId" class="block text-[13px] font-medium text-gray-700 mb-1.5">Unit Type <span class="text-red-500">*</span></label>
+            <select asp-for="UnitTypeId" asp-items="Model.UnitTypeOptions"
+                    class="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors">
                 <option value="">-- Select a unit type --</option>
             </select>
-            <span asp-validation-for="UnitTypeId" class="text-danger"></span>
+            <span asp-validation-for="UnitTypeId" class="text-xs text-red-500 mt-1 block"></span>
         </div>
     </div>
-    <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-primary">Save</button>
+    <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-200">
+        <button type="button" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-md transition-colors" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-md transition-colors">Save Unit</button>
     </div>
 </form>

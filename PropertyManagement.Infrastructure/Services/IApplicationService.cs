@@ -3,9 +3,34 @@ using PropertyManagement.Domain.Entities;
 
 namespace PropertyManagement.Infrastructure.Services;
 
-public record ApplicantInfoInput(string FullName, string Phone, string Email, string AddressLine1, string? AddressLine2, string City, string State, string ZipCode, byte[] RowVersion);
+public record ApplicantInfoInput(
+    string FullName,
+    string Phone,
+    string Email,
+    string AddressLine1,
+    string? AddressLine2,
+    string City,
+    string State,
+    string ZipCode,
+    DateOnly? DateOfBirth,
+    string? Employment,
+    decimal? AnnualIncome,
+    DateOnly? DesiredMoveInDate,
+    byte[] RowVersion);
 
-public record ResidenceInput(string AddressLine1, string? AddressLine2, string City, string State, string ZipCode, string LandlordName, string LandlordPhone, DateOnly MoveInDate, DateOnly? MoveOutDate, byte[] RowVersion);
+public record ResidenceInput(
+    string AddressLine1,
+    string? AddressLine2,
+    string City,
+    string State,
+    string ZipCode,
+    string LandlordName,
+    string LandlordPhone,
+    DateOnly MoveInDate,
+    DateOnly? MoveOutDate,
+    decimal? MonthlyRent,
+    string? ReasonForLeaving,
+    byte[] RowVersion);
 
 /// <summary>
 /// All operations take an already-loaded, ownership-checked <see cref="Application"/>

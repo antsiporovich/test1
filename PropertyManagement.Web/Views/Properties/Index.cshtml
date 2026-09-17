@@ -5,18 +5,30 @@
 
 @Html.AntiForgeryToken()
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>Properties</h1>
-    <button type="button" class="btn btn-primary"
-            data-ajax-modal-url="@Url.Action("CreateForm")"
-            data-refresh-url="@Url.Action("ListPartial")"
-            data-refresh-target="#propertyListRegion">
-        Add Property
-    </button>
-</div>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-<div id="propertyListRegion">
-    <partial name="_PropertyList" model="Model" />
+    <div class="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 space-y-4">
+
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h1 class="text-3xl font-extrabold text-ink mb-1">Properties</h1>
+                <p class="text-sm text-muted">Manage your properties and units. Add units, update details, and keep availability up to date.</p>
+            </div>
+            <button type="button"
+                    class="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-md transition-colors"
+                    data-ajax-modal-url="@Url.Action("CreateForm")"
+                    data-refresh-url="@Url.Action("ListPartial")"
+                    data-refresh-target="#propertyListRegion">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                Add Property
+            </button>
+        </div>
+
+        <div id="propertyListRegion" class="space-y-4">
+            <partial name="_PropertyList" model="Model" />
+        </div>
+
+    </div>
 </div>
 
 @section Scripts {

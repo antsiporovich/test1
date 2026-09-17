@@ -13,6 +13,13 @@ public class ReviewFormViewModel : IValidatableObject
 {
     public int ApplicationId { get; set; }
 
+    /// <summary>Display-only header context (applicant name + property/unit). Set by the
+    /// controller for GET and re-set on invalid POST; never bound from the request.</summary>
+    public string ApplicantName { get; set; } = string.Empty;
+    public string ApplicantEmail { get; set; } = string.Empty;
+    public string ApplicantPhone { get; set; } = string.Empty;
+    public string PropertyUnit { get; set; } = string.Empty;
+
     [Required(ErrorMessage = "Please select an outcome.")]
     public ReviewOutcome? Outcome { get; set; }
 

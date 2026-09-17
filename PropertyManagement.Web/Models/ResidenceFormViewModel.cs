@@ -52,6 +52,15 @@ public class ResidenceFormViewModel : IValidatableObject
     [DataType(DataType.Date)]
     public DateOnly? MoveOutDate { get; set; }
 
+    [Required]
+    [Range(0.01, 1_000_000)]
+    [Display(Name = "Monthly rent")]
+    public decimal? MonthlyRent { get; set; }
+
+    [StringLength(500)]
+    [Display(Name = "Reason for leaving")]
+    public string? ReasonForLeaving { get; set; }
+
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (MoveOutDate is not null && MoveOutDate < MoveInDate)

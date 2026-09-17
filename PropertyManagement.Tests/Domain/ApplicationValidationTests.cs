@@ -16,6 +16,10 @@ public class ApplicationValidationTests
         City = "Springfield",
         State = "IL",
         ZipCode = "62704",
+        DateOfBirth = new DateOnly(1990, 3, 14),
+        Employment = "Marketing Specialist",
+        AnnualIncome = 72000m,
+        DesiredMoveInDate = new DateOnly(2024, 6, 1),
     };
 
     [Fact]
@@ -66,7 +70,7 @@ public class ApplicationValidationTests
         {
             ApplicantInfo = ValidApplicantInfo(),
             ResidenceHistoryConfirmedAtUtc = DateTimeOffset.UtcNow,
-            Residences = [new Residence { MoveInDate = new DateOnly(2024, 6, 1), MoveOutDate = new DateOnly(2024, 1, 1) }],
+            Residences = [new Residence { MoveInDate = new DateOnly(2024, 6, 1), MoveOutDate = new DateOnly(2024, 1, 1), MonthlyRent = 1200m }],
         };
 
         ApplicationValidation.GetOutstandingErrors(app).Should().ContainSingle(e => e.Field == "Residence 1");

@@ -12,4 +12,6 @@ public class ResidenceRowViewModel
     public string LandlordPhone { get; set; } = string.Empty;
     public DateOnly MoveInDate { get; set; }
     public DateOnly? MoveOutDate { get; set; }
+    public decimal? MonthlyRent { get; set; }
+    public string? ReasonForLeaving { get; set; }
 }
