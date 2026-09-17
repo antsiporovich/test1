@@ -14,4 +14,18 @@ public class GridViewModel
     /// <summary>Optional URL template (e.g. "/Applications/{id}") substituting a row's
     /// "id" field; when set, rows are clickable. Null/empty disables row navigation.</summary>
     public string? RowUrlTemplate { get; set; }
+
+    /// <summary>Optional id of a page-level search `&lt;input&gt;` the grid listens to
+    /// (debounced) and sends as a `search` query param on every request. Null/empty
+    /// means no search box is wired to this grid instance.</summary>
+    public string? SearchInputId { get; set; }
+
+    /// <summary>When set (with <see cref="RowUrlTemplate"/>), the grid renders a trailing
+    /// "Actions" column whose cell is a button with this label linking to the row URL
+    /// (e.g. "View"). Null/empty renders no action column.</summary>
+    public string? RowActionLabel { get; set; }
+
+    /// <summary>Noun used in the "Showing 1–N of T {label}" pager summary (e.g.
+    /// "applications"). Defaults to "results".</summary>
+    public string ItemLabel { get; set; } = "results";
 }

@@ -5,24 +5,24 @@
 
 @if (!Model.Any())
 {
-    <p class="text-muted mb-0">No notes yet.</p>
+    <p class="text-sm text-gray-400">No notes yet.</p>
 }
 else
 {
-    <ul class="list-group list-group-flush">
+    <ul class="space-y-4">
         @foreach (var note in Model)
         {
-            <li class="list-group-item px-0">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div class="flex-grow-1 me-2" style="white-space: pre-wrap;">@note.Body</div>
-                    <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0"
+            <li class="pb-4 border-b border-gray-50 last:border-0 last:pb-0">
+                <div class="flex items-start justify-between gap-3">
+                    <p class="text-sm text-gray-800 whitespace-pre-wrap flex-1">@note.Body</p>
+                    <button type="button" class="shrink-0 text-xs font-medium text-gray-500 hover:text-gray-800 transition-colors"
                             data-ajax-modal-url="@Url.Action("EditNoteForm", "Applications", new { id = note.ApplicationId, noteId = note.Id })">
                         Edit
                     </button>
                 </div>
-                <small class="text-muted">
-                    @note.AuthorName &mdash; @note.CreatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
-                </small>
+                <p class="text-xs text-gray-400 mt-1.5">
+                    @note.AuthorName &middot; @note.CreatedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")
+                </p>
             </li>
         }
     </ul>

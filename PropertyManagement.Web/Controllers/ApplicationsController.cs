@@ -462,7 +462,15 @@ public class ApplicationsController(
 
         if (!CanCurrentPmReview(application)) return Forbid();
 
-        return PartialView("_ReviewForm", new ReviewFormViewModel { ApplicationId = id });
+        var vm = new ReviewFormViewModel { ApplicationId = id };
+        PopulateReviewHeader(vm, application);
+        return PartialView("_ReviewForm", vm);
+    }
+
+    private static void PopulateReviewHeader(ReviewFormViewModel vm, Application application)
+    {
+        vm.ApplicantName = application.ApplicantInfo?.FullName is { Length: > 0 } name ? name : "Applicant";
+        vm.PropertyUnit = $"{application.Unit.Property.Name} — Unit {application.Unit.UnitNumber}";
     }
 
     [HttpPost("{id:int}/Review")]
@@ -478,7 +486,10 @@ public class ApplicationsController(
         if (!CanCurrentPmReview(application)) return Forbid();
 
         if (!ModelState.IsValid)
+        {
+            PopulateReviewHeader(model, application);
             return PartialView("_ReviewForm", model);
+        }
 
         var actorId = userManager.GetUserId(User)!;
         ServiceResult<bool> result = model.Outcome switch
@@ -491,6 +502,7 @@ public class ApplicationsController(
 
         if (!result.Succeeded)
         {
+            PopulateReviewHeader(model, application);
             ModelState.AddModelError(string.Empty, result.Errors.Values.SelectMany(e => e).FirstOrDefault() ?? "Review could not be completed.");
             return PartialView("_ReviewForm", model);
         }

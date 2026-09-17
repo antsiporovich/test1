@@ -29,6 +29,7 @@ public class ApplicationsApiController(IApplicationQueryService queryService, Us
     /// <param name="desc">Sort descending instead of ascending.</param>
     /// <param name="page">1-based page number; clamped to at least 1.</param>
     /// <param name="pageSize">Rows per page; clamped to 1–100.</param>
+    /// <param name="search">Optional applicant-name search (PM view only — has no effect narrowing an Applicant's own scope beyond their own rows).</param>
     /// <param name="ct">Cancellation token.</param>
     [HttpGet]
     [ProducesResponseType<GridResponse<ApplicationRowDto>>(StatusCodes.Status200OK)]
@@ -39,6 +40,7 @@ public class ApplicationsApiController(IApplicationQueryService queryService, Us
         bool desc = false,
         int page = 1,
         int pageSize = 10,
+        string? search = null,
         CancellationToken ct = default)
     {
         page = Math.Max(1, page);
@@ -48,7 +50,7 @@ public class ApplicationsApiController(IApplicationQueryService queryService, Us
         var userId = userManager.GetUserId(User)!;
         var isApplicant = User.IsInRole("Applicant");
 
-        var query = queryService.BuildQuery(userId, isApplicant, status, propertyId, sortKey, desc);
+        var query = queryService.BuildQuery(userId, isApplicant, status, propertyId, sortKey, desc, search);
 
         var totalCount = await query.CountAsync(ct);
         var rows = await query
@@ -59,6 +61,8 @@ public class ApplicationsApiController(IApplicationQueryService queryService, Us
                 Id = a.Id,
                 Applicant = a.ApplicantInfo != null ? a.ApplicantInfo.FullName : null,
                 Property = a.Unit.Property.Name + " — Unit " + a.Unit.UnitNumber,
+                PropertyName = a.Unit.Property.Name,
+                Unit = a.Unit.UnitNumber,
                 Status = a.Status == ApplicationStatus.UnderReview
                     ? "Under Review (" + userManager.Users.Where(u => u.Id == a.ClaimedByUserId).Select(u => u.DisplayName).FirstOrDefault() + ")"
                     : a.Status.ToString(),

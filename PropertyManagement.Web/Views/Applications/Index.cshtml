@@ -5,13 +5,22 @@
     var isApplicant = User.IsInRole("Applicant");
 
     var columns = new List<GridColumn>();
-    if (!isApplicant)
+    if (isApplicant)
     {
-        columns.Add(new GridColumn("applicant", "Applicant"));
+        // Applicant view: separate Property / Unit # columns + "Date Applied" (matches the mock).
+        columns.Add(new GridColumn("propertyName", "Property", Sortable: false));
+        columns.Add(new GridColumn("unit", "Unit #", Sortable: false));
+        columns.Add(new GridColumn("updated", "Date Applied", Sortable: true, Type: "date"));
+        columns.Add(new GridColumn("status", "Status", Sortable: true, Type: "status"));
     }
-    columns.Add(new GridColumn("property", "Property / Unit"));
-    columns.Add(new GridColumn("status", "Status"));
-    columns.Add(new GridColumn("updated", "Last updated", Type: "date"));
+    else
+    {
+        // PM view: Applicant column + combined two-line Property / Unit.
+        columns.Add(new GridColumn("applicant", "Applicant", Sortable: false));
+        columns.Add(new GridColumn("property", "Property / Unit", Sortable: true, Type: "twoline"));
+        columns.Add(new GridColumn("updated", "Submitted", Sortable: true, Type: "date"));
+        columns.Add(new GridColumn("status", "Status", Sortable: true, Type: "status"));
+    }
 
     var fixedParams = new Dictionary<string, string>();
     if (Model.Status is not null)
@@ -27,7 +36,7 @@
     // generation and silently fall back to the conventional /Applications/Wizard/{id}
     // route instead of the real attribute-routed /Applications/{id} — use a valid int
     // (0) then replace it to get the {id} template the grid JS substitutes at run time.
-    string? rowUrlTemplate = null;
+    string? rowUrlTemplate;
     if (isApplicant)
     {
         var sampleUrl = Url.Action("Wizard", "Applications", new { id = 0 })!;
@@ -35,8 +44,6 @@
     }
     else
     {
-        // PM row-click → application detail (REVIEW-1).
-        // Route is /Applications/{id}/Detail; replace the literal 0 to get the template.
         var sampleUrl = Url.Action("Detail", "Applications", new { id = 0 })!; // /Applications/0/Detail
         rowUrlTemplate = sampleUrl.Replace("/0/", "/{id}/");
     }
@@ -45,74 +52,141 @@
     {
         ApiEndpoint = Url.Content("~/api/applications"),
         Columns = columns,
-        PageSize = 5, // small enough that the 10 seeded applications actually demonstrate paging
+        PageSize = 5,
         FixedParams = fixedParams,
         RowUrlTemplate = rowUrlTemplate,
+        RowActionLabel = "View",
+        ItemLabel = "applications",
+        SearchInputId = isApplicant ? null : "applicantSearchInput",
     };
 }
 
-<h1>Applications</h1>
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-@if (TempData["Error"] is string error)
-{
-    <div class="alert alert-warning">@error</div>
-}
+    <h1 class="text-2xl font-bold text-gray-900 mb-1">@(isApplicant ? "My Applications" : "Applications")</h1>
+    <p class="text-sm text-gray-500 mb-6">
+        @(isApplicant ? "View and track all of your rental applications." : "Review submitted applications and manage the review queue.")
+    </p>
 
-@if (!isApplicant && Model.QueueRows is { Count: > 0 })
-{
-    <h2 class="h5">Review Queue</h2>
-    <table class="table table-sm align-middle mb-4">
-        <thead>
-            <tr>
-                <th>Property / Unit</th>
-                <th>Status</th>
-                <th>Claimed by</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var row in Model.QueueRows)
-            {
-                <tr>
-                    <td>@row.PropertyUnit</td>
-                    <td>@row.Status</td>
-                    <td>@row.ClaimedByName</td>
-                    <td class="text-end">
-                        <a asp-action="Detail" asp-route-id="@row.Id"
-                           class="btn btn-sm btn-outline-primary me-1">View</a>
-                        @if (row.Status == ApplicationStatus.Submitted)
+    @if (TempData["Error"] is string error)
+    {
+        <div class="mb-5 flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-sm" role="alert">
+            @error
+        </div>
+    }
+
+    @if (!isApplicant && Model.QueueRows is { Count: > 0 })
+    {
+        <section class="mb-6">
+            <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div class="px-6 py-4">
+                    <h2 class="text-base font-bold text-gray-900">Review Queue</h2>
+                    <p class="text-sm text-gray-500 mt-0.5">Applications claimed by you or available for review.</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="bg-gray-50 border-y border-gray-200">
+                                <th class="text-left px-6 py-2 text-xs font-semibold text-gray-500">Applicant</th>
+                                <th class="text-left px-6 py-2 text-xs font-semibold text-gray-500">Property / Unit</th>
+                                <th class="text-left px-6 py-2 text-xs font-semibold text-gray-500">Status</th>
+                                <th class="text-left px-6 py-2 text-xs font-semibold text-gray-500">Claimed by</th>
+                                <th class="text-right px-6 py-2 text-xs font-semibold text-gray-500">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.QueueRows)
+                            {
+                                var pu = row.PropertyUnit.Split(" — ");
+                                var canReview = row.Status == ApplicationStatus.Submitted || row.IsClaimedByMe;
+                                <tr class="border-b border-gray-100 last:border-0 hover:bg-gray-50/70 transition-colors">
+                                    <td class="px-6 py-2.5 text-gray-500">—</td>
+                                    <td class="px-6 py-2.5">
+                                        <div class="text-gray-900 font-medium">@pu[0]</div>
+                                        @if (pu.Length > 1)
+                                        {
+                                            <div class="text-[11px] text-gray-400 mt-0.5">@string.Join(" — ", pu[1..])</div>
+                                        }
+                                    </td>
+                                    <td class="px-6 py-2.5">
+                                        <partial name="_StatusBadge" model="@row.Status.ToString()" />
+                                    </td>
+                                    <td class="px-6 py-2.5 text-gray-500">@(row.ClaimedByName ?? "—")</td>
+                                    <td class="px-6 py-2.5 text-right whitespace-nowrap">
+                                        @if (row.Status == ApplicationStatus.Submitted)
+                                        {
+                                            <form asp-action="Claim" asp-route-id="@row.Id" method="post" class="inline">
+                                                <button type="submit" class="inline-flex items-center justify-center w-[75px] py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-md transition-colors mr-2">Claim</button>
+                                            </form>
+                                            <button type="button" class="inline-flex items-center justify-center w-[75px] py-1.5 border border-gray-300 text-gray-600 hover:bg-gray-50 text-xs font-medium rounded-md transition-colors"
+                                                    data-ajax-modal-url="@Url.Action("ReviewForm", new { id = row.Id })">Review</button>
+                                        }
+                                        else if (row.IsClaimedByMe)
+                                        {
+                                            <form asp-action="Release" asp-route-id="@row.Id" method="post" class="inline">
+                                                <button type="submit" class="inline-flex items-center justify-center w-[75px] py-1.5 border border-gray-300 text-gray-600 hover:bg-gray-50 text-xs font-medium rounded-md transition-colors mr-2">Release</button>
+                                            </form>
+                                            <button type="button" class="inline-flex items-center justify-center w-[75px] py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-md transition-colors"
+                                                    data-ajax-modal-url="@Url.Action("ReviewForm", new { id = row.Id })">Review</button>
+                                        }
+                                        else
+                                        {
+                                            <a asp-action="Detail" asp-route-id="@row.Id" class="inline-flex items-center justify-center w-[75px] py-1.5 border border-gray-300 text-gray-600 hover:bg-gray-50 text-xs font-medium rounded-md transition-colors">View</a>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    }
+
+    <section>
+        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div class="px-6 py-4">
+                @if (!isApplicant)
+                {
+                    <h2 class="text-base font-bold text-gray-900 mb-4">All Applications</h2>
+                }
+                <div class="flex flex-wrap items-end justify-between gap-4">
+                    <form method="get" class="flex flex-wrap items-end gap-4">
+                        <div>
+                            <label asp-for="Status" class="block text-xs font-medium text-gray-500 mb-1.5">Status</label>
+                            <select asp-for="Status" asp-items="Model.StatusOptions" onchange="this.form.submit()"
+                                    class="px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors min-w-[190px]">
+                                <option value="">All Statuses</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label asp-for="PropertyId" class="block text-xs font-medium text-gray-500 mb-1.5">Property</label>
+                            <select asp-for="PropertyId" asp-items="Model.PropertyOptions" onchange="this.form.submit()"
+                                    class="px-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors min-w-[190px]">
+                                <option value="">All Properties</option>
+                            </select>
+                        </div>
+                        @if (isApplicant)
                         {
-                            <form asp-action="Claim" asp-route-id="@row.Id" method="post" class="d-inline">
-                                <button type="submit" class="btn btn-sm btn-primary">Claim</button>
-                            </form>
+                            <a asp-action="Index" class="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-md transition-colors">Clear Filters</a>
                         }
-                        else if (row.IsClaimedByMe)
-                        {
-                            <form asp-action="Release" asp-route-id="@row.Id" method="post" class="d-inline">
-                                <button type="submit" class="btn btn-sm btn-outline-secondary">Release</button>
-                            </form>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+                    </form>
 
-<form method="get" class="row g-2 mb-3">
-    <div class="col-auto">
-        <select asp-for="Status" asp-items="Model.StatusOptions" class="form-select">
-            <option value="">All statuses</option>
-        </select>
-    </div>
-    <div class="col-auto">
-        <select asp-for="PropertyId" asp-items="Model.PropertyOptions" class="form-select">
-            <option value="">All properties</option>
-        </select>
-    </div>
-    <div class="col-auto">
-        <button type="submit" class="btn btn-secondary">Filter</button>
-    </div>
-</form>
+                    @if (!isApplicant)
+                    {
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                            </span>
+                            <input type="text" id="applicantSearchInput" placeholder="Search applicants…"
+                                   class="pl-9 pr-3.5 py-2 border border-gray-300 rounded-md text-sm text-gray-700 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors w-56" />
+                        </div>
+                    }
+                </div>
+            </div>
 
-@await Component.InvokeAsync("Grid", new { model = gridVm })
+            @await Component.InvokeAsync("Grid", new { model = gridVm })
+        </div>
+    </section>
+
+</div>

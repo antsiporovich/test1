@@ -4,147 +4,132 @@
 }
 @Html.AntiForgeryToken()
 
-<div class="d-flex justify-content-between align-items-start mb-3">
-    <div>
-        <h1 class="h3">@Model.PropertyUnit</h1>
-        <p class="text-muted mb-0">
-            Applicant(s): <strong>@Model.ApplicantNames</strong>
-            &ensp;·&ensp;
-            Status: <span class="badge text-bg-secondary">@Model.Status</span>
-        </p>
-    </div>
-    <div class="d-flex gap-2">
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <a asp-action="Index" asp-controller="Applications" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors mb-4">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        Back to Applications
+    </a>
+
+    <div class="flex items-start justify-between mb-1">
+        <div class="flex items-center gap-3">
+            <h1 class="text-2xl font-bold text-gray-900">@Model.ApplicantNames</h1>
+            <partial name="_StatusBadge" model="Model.Status" />
+        </div>
         @if (Model.CanReview)
         {
-            <button type="button" class="btn btn-primary"
+            <button type="button"
+                    class="shrink-0 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
                     data-ajax-modal-url="@Url.Action("ReviewForm", "Applications", new { id = Model.Id })">
                 Review Application
             </button>
         }
-        <a asp-action="Index" asp-controller="Applications" class="btn btn-outline-secondary">
-            ← Back to List
-        </a>
     </div>
-</div>
+    <p class="text-sm text-gray-500 mb-1">@Model.PropertyUnit</p>
 
-@* ── Applicant Information ────────────────────────────────────────────────── *@
-<div class="card mb-3">
-    <div class="card-header fw-semibold">Applicant Information</div>
-    <div class="card-body">
-        @if (Model.ApplicantInformation is null)
-        {
-            <p class="text-muted">Not yet completed.</p>
-        }
-        else
-        {
-            var info = Model.ApplicantInformation;
-            <dl class="row mb-0">
-                <dt class="col-sm-3">Full Name</dt>
-                <dd class="col-sm-9">@info.FullName</dd>
-                <dt class="col-sm-3">Phone</dt>
-                <dd class="col-sm-9">@info.Phone</dd>
-                <dt class="col-sm-3">Email</dt>
-                <dd class="col-sm-9">@info.Email</dd>
-                <dt class="col-sm-3">Address</dt>
-                <dd class="col-sm-9">
-                    @info.AddressLine1
-                    @if (!string.IsNullOrEmpty(info.AddressLine2))
-                    {
-                        <span>, @info.AddressLine2</span>
-                    }
-                    , @info.City, @info.State @info.ZipCode
-                </dd>
-            </dl>
-        }
-    </div>
-</div>
+    <div class="grid lg:grid-cols-2 gap-5 mt-6">
 
-@* ── Residence History ────────────────────────────────────────────────────── *@
-<div class="card mb-3">
-    <div class="card-header fw-semibold">Residence History</div>
-    <div class="card-body p-0">
-        @if (!Model.Residences.Any())
-        {
-            <p class="text-muted p-3 mb-0">No prior residences listed.</p>
-        }
-        else
-        {
-            <table class="table table-sm align-middle mb-0">
-                <thead>
-                    <tr>
-                        <th>Address</th>
-                        <th>Landlord</th>
-                        <th>Phone</th>
-                        <th>Move-in</th>
-                        <th>Move-out</th>
-                    </tr>
-                </thead>
-                <tbody>
+        @* ── Applicant Information ────────────────────────────────────────── *@
+        <div class="bg-white border border-gray-100 rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-sm font-bold text-gray-900">Applicant Information</h2>
+            </div>
+            @if (Model.ApplicantInformation is null)
+            {
+                <p class="text-sm text-gray-400">Not yet completed.</p>
+            }
+            else
+            {
+                var info = Model.ApplicantInformation;
+                <dl class="space-y-3 text-sm">
+                    <div><dt class="text-gray-400 text-xs mb-0.5">Full Name</dt><dd class="text-gray-900">@info.FullName</dd></div>
+                    <div><dt class="text-gray-400 text-xs mb-0.5">Email</dt><dd class="text-gray-900">@info.Email</dd></div>
+                    <div><dt class="text-gray-400 text-xs mb-0.5">Phone</dt><dd class="text-gray-900">@info.Phone</dd></div>
+                    <div>
+                        <dt class="text-gray-400 text-xs mb-0.5">Address</dt>
+                        <dd class="text-gray-900">
+                            @info.AddressLine1@(string.IsNullOrEmpty(info.AddressLine2) ? "" : $", {info.AddressLine2}"), @info.City, @info.State @info.ZipCode
+                        </dd>
+                    </div>
+                </dl>
+            }
+        </div>
+
+        @* ── Residence History ────────────────────────────────────────────── *@
+        <div class="bg-white border border-gray-100 rounded-2xl p-5">
+            <h2 class="text-sm font-bold text-gray-900 mb-4">Residence History</h2>
+            @if (!Model.Residences.Any())
+            {
+                <p class="text-sm text-gray-400">No prior residences listed.</p>
+            }
+            else
+            {
+                <ul class="space-y-4">
                     @foreach (var r in Model.Residences)
                     {
-                        <tr>
-                            <td>
-                                @r.AddressLine1
-                                @if (!string.IsNullOrEmpty(r.AddressLine2)) { <span>, @r.AddressLine2</span> }
-                                , @r.City, @r.State @r.ZipCode
-                            </td>
-                            <td>@r.LandlordName</td>
-                            <td>@r.LandlordPhone</td>
-                            <td>@r.MoveInDate.ToString("MMM d, yyyy")</td>
-                            <td>@(r.MoveOutDate?.ToString("MMM d, yyyy") ?? "Current")</td>
-                        </tr>
+                        <li class="text-sm">
+                            <p class="text-gray-900 font-medium">
+                                @r.AddressLine1@(string.IsNullOrEmpty(r.AddressLine2) ? "" : $", {r.AddressLine2}"), @r.City, @r.State
+                            </p>
+                            <p class="text-gray-400 text-xs mt-0.5">
+                                @r.MoveInDate.ToString("MMM yyyy") &ndash; @(r.MoveOutDate?.ToString("MMM yyyy") ?? "Present")
+                                &middot; Landlord: @r.LandlordName (@r.LandlordPhone)
+                            </p>
+                        </li>
                     }
-                </tbody>
-            </table>
-        }
-    </div>
-</div>
+                </ul>
+            }
+        </div>
 
-@* ── PM Notes (NOTES-1/NOTES-2, Features/12) — PM-only, never in applicant HTML *@
-<div class="card mb-3">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span class="fw-semibold">Internal Notes</span>
-        <button type="button" class="btn btn-sm btn-outline-primary"
-                data-ajax-modal-url="@Url.Action("CreateNoteForm", "Applications", new { id = Model.Id })">
-            + Add Note
-        </button>
-    </div>
-    <div class="card-body" id="notesListRegion">
-        @await Html.PartialAsync("_NotesListPartial", Model.Notes)
-    </div>
-</div>
+        @* ── PM Notes (NOTES-1/NOTES-2) — PM-only, never in applicant HTML ─── *@
+        <div class="bg-white border border-gray-100 rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-sm font-bold text-gray-900">Internal Notes</h2>
+                <button type="button" class="text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
+                        data-ajax-modal-url="@Url.Action("CreateNoteForm", "Applications", new { id = Model.Id })">
+                    + Add Note
+                </button>
+            </div>
+            <div id="notesListRegion">
+                @await Html.PartialAsync("_NotesListPartial", Model.Notes)
+            </div>
+        </div>
 
-@* ── Status / Review History (REVIEW-5) ──────────────────────────────────── *@
-<div class="card mb-3">
-    <div class="card-header fw-semibold">Status &amp; Review History</div>
-    <div class="card-body p-0">
-        @if (!Model.StatusHistory.Any())
-        {
-            <p class="text-muted p-3 mb-0">No history entries yet.</p>
-        }
-        else
-        {
-            <table class="table table-sm align-middle mb-0">
-                <thead>
-                    <tr>
-                        <th>Status</th>
-                        <th>By</th>
-                        <th>When</th>
-                        <th>Comment</th>
-                    </tr>
-                </thead>
-                <tbody>
+        @* ── Status / Review History (REVIEW-5) ──────────────────────────── *@
+        <div class="bg-white border border-gray-100 rounded-2xl p-5">
+            <h2 class="text-sm font-bold text-gray-900 mb-4">Status &amp; Review History</h2>
+            @if (!Model.StatusHistory.Any())
+            {
+                <p class="text-sm text-gray-400">No history entries yet.</p>
+            }
+            else
+            {
+                <ul class="space-y-4">
                     @foreach (var h in Model.StatusHistory)
                     {
-                        <tr>
-                            <td><span class="badge text-bg-secondary">@h.ResultingStatus</span></td>
-                            <td>@h.ActorName</td>
-                            <td>@h.Timestamp.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</td>
-                            <td class="text-muted">@h.Comment</td>
-                        </tr>
+                        <li class="flex gap-3">
+                            <div class="w-2 h-2 rounded-full bg-brand-600 mt-1.5 shrink-0"></div>
+                            <div class="text-sm">
+                                <p class="text-gray-900">
+                                    <span class="font-medium">@h.ResultingStatus</span>
+                                    <span class="text-gray-400 text-xs ml-1">@h.Timestamp.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</span>
+                                </p>
+                                <p class="text-gray-500 text-xs mt-0.5">By @h.ActorName</p>
+                                @if (!string.IsNullOrEmpty(h.Comment))
+                                {
+                                    <p class="text-gray-600 text-xs mt-1 italic">&ldquo;@h.Comment&rdquo;</p>
+                                }
+                            </div>
+                        </li>
                     }
-                </tbody>
-            </table>
-        }
+                </ul>
+            }
+        </div>
+
     </div>
+
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -2,47 +2,47 @@
 
 @if (Model.Units.Count == 0)
 {
-    <p class="text-muted small mb-0">No units yet.</p>
+    <p class="px-6 pb-5 text-sm text-gray-400">No units yet.</p>
 }
 else
 {
-    <table class="table table-sm align-middle mb-0">
+    <table class="w-full text-xs">
         <thead>
-            <tr>
-                <th>Unit #</th>
-                <th>Bedrooms</th>
-                <th>Rent</th>
-                <th>Type</th>
-                <th>Availability</th>
-                <th></th>
+            <tr class="bg-gray-50 border-y border-gray-200">
+                <th class="text-left px-6 py-2 text-xs font-semibold text-gray-500">Unit #</th>
+                <th class="text-left px-6 py-2 text-xs font-semibold text-gray-500">Bedrooms</th>
+                <th class="text-left px-6 py-2 text-xs font-semibold text-gray-500">Rent</th>
+                <th class="text-left px-6 py-2 text-xs font-semibold text-gray-500">Type</th>
+                <th class="text-left px-6 py-2 text-xs font-semibold text-gray-500">Availability</th>
+                <th class="text-right px-6 py-2 text-xs font-semibold text-gray-500">Actions</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var unit in Model.Units)
             {
-                <tr>
-                    <td>@unit.UnitNumber</td>
-                    <td>@unit.Bedrooms</td>
-                    <td>@unit.MonthlyRent.ToString("C")</td>
-                    <td>@unit.UnitTypeName</td>
-                    <td>
+                <tr class="border-b border-gray-100 last:border-0 hover:bg-gray-50/70 transition-colors">
+                    <td class="px-6 py-2.5 text-gray-900 font-medium">@unit.UnitNumber</td>
+                    <td class="px-6 py-2.5 text-gray-700">@unit.Bedrooms</td>
+                    <td class="px-6 py-2.5 text-gray-700">@unit.MonthlyRent.ToString("C0")</td>
+                    <td class="px-6 py-2.5 text-gray-700">@unit.UnitTypeName</td>
+                    <td class="px-6 py-2.5">
                         @if (unit.IsAvailable)
                         {
-                            <span class="badge text-bg-success">Available</span>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700">Available</span>
                         }
                         else
                         {
-                            <span class="badge text-bg-secondary">Unavailable</span>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">Occupied</span>
                         }
                     </td>
-                    <td class="text-end">
-                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                    <td class="px-6 py-2.5 text-right whitespace-nowrap">
+                        <button type="button" class="inline-flex items-center px-3 py-1 text-xs font-medium border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 transition-colors mr-1.5"
                                 data-ajax-modal-url="@Url.Action("EditForm", "Units", new { propertyId = unit.PropertyId, unitId = unit.Id })"
                                 data-refresh-url="@Url.Action("UnitsPartial", "Units", new { propertyId = unit.PropertyId })"
                                 data-refresh-target="#unitListRegion-@unit.PropertyId">
                             Edit
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline-danger"
+                        <button type="button" class="inline-flex items-center px-3 py-1 text-xs font-medium border border-gray-300 rounded-md text-red-600 hover:bg-red-50 transition-colors"
                                 data-ajax-remove-url="@Url.Action("Remove", "Units", new { propertyId = unit.PropertyId, unitId = unit.Id })"
                                 data-confirm="Remove unit @unit.UnitNumber?"
                                 data-refresh-url="@Url.Action("UnitsPartial", "Units", new { propertyId = unit.PropertyId })"

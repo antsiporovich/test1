@@ -1,38 +1,145 @@
 @model PropertyManagement.Web.Models.LoginViewModel
 @{
-    ViewData["Title"] = "Log in";
+    ViewData["Title"] = "Sign in";
+    Layout = null;
 }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign in — PropertyManagement</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50:  '#eef6f1',
+                            100: '#d5e9dc',
+                            200: '#aed3ba',
+                            500: '#2b9e5f',
+                            600: '#1e8a4f',
+                            700: '#17703f',
+                            800: '#135b34',
+                            900: '#0e4527',
+                        }
+                    },
+                    fontFamily: { sans: ['Inter','ui-sans-serif','system-ui','sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+</head>
+<body class="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12 font-sans antialiased">
 
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <h1>Log in</h1>
+    <div class="w-full max-w-md">
+        <div class="bg-white border border-gray-200 rounded-xl shadow-md px-8 py-9">
 
-        <form asp-controller="Account" asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
-
-            <div class="mb-3">
-                <label asp-for="Email" class="form-label"></label>
-                <input asp-for="Email" class="form-control" autocomplete="username" />
-                <span asp-validation-for="Email" class="text-danger"></span>
+            @* Brand *@
+            <div class="flex flex-col items-center mb-7">
+                <a asp-controller="Home" asp-action="Index" class="flex items-center gap-2 mb-6 group">
+                    <span class="w-9 h-9 rounded-lg bg-brand-600 group-hover:bg-brand-700 transition-colors flex items-center justify-center">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                    </span>
+                    <span class="font-bold text-gray-900 text-base tracking-tight">PropertyManagement</span>
+                </a>
+                <h1 class="text-[1.5rem] font-bold text-gray-900 mb-1">Welcome back</h1>
+                <p class="text-sm text-gray-500">Sign in to your account to continue.</p>
             </div>
 
-            <div class="mb-3">
-                <label asp-for="Password" class="form-label"></label>
-                <input asp-for="Password" class="form-control" autocomplete="current-password" />
-                <span asp-validation-for="Password" class="text-danger"></span>
+            <form asp-controller="Account" asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post" novalidate>
+
+                @* Server-side errors *@
+                <div asp-validation-summary="ModelOnly" class="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm empty:hidden" role="alert"></div>
+
+                @* Email *@
+                <div class="mb-3.5">
+                    <label asp-for="Email" class="block text-[13px] font-medium text-gray-700 mb-1.5"></label>
+                    <input asp-for="Email" type="email"
+                           class="w-full px-3.5 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors"
+                           placeholder="you@example.com"
+                           autocomplete="username" />
+                    <span asp-validation-for="Email" class="text-xs text-red-500 mt-1 block"></span>
+                </div>
+
+                @* Password *@
+                <div class="mb-4">
+                    <label asp-for="Password" class="block text-[13px] font-medium text-gray-700 mb-1.5"></label>
+                    <div class="relative">
+                        <input asp-for="Password" type="password" id="pwd-login"
+                               class="w-full px-3.5 py-2 pr-11 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-600 transition-colors"
+                               placeholder="Enter your password"
+                               autocomplete="current-password" />
+                        <button type="button" onclick="togglePwd('pwd-login', this)"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                aria-label="Toggle password visibility">
+                            <svg id="eye-login" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Password" class="text-xs text-red-500 mt-1 block"></span>
+                </div>
+
+                @* Remember me + Forgot password *@
+                <div class="flex items-center justify-between mb-6">
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input asp-for="RememberMe" type="checkbox"
+                               class="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-600 focus:ring-offset-0 cursor-pointer" />
+                        <span class="text-sm text-gray-600">Remember me</span>
+                    </label>
+                    <a href="#" class="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors">Forgot password?</a>
+                </div>
+
+                @* Submit *@
+                <button type="submit"
+                        class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-semibold rounded-md text-sm transition-colors">
+                    Sign In
+                </button>
+
+            </form>
+
+            @* Divider *@
+            <div class="relative my-6">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-200"></div>
+                </div>
             </div>
 
-            <div class="mb-3 form-check">
-                <input asp-for="RememberMe" class="form-check-input" />
-                <label asp-for="RememberMe" class="form-check-label"></label>
-            </div>
+            @* Register link *@
+            <p class="text-center text-sm text-gray-500">
+                Don&rsquo;t have an account?&nbsp;
+                <a asp-controller="Account" asp-action="Register" asp-route-returnUrl="@ViewData["ReturnUrl"]"
+                   class="font-medium text-brand-600 hover:text-brand-700 transition-colors">
+                    Create one
+                </a>
+            </p>
 
-            <button type="submit" class="btn btn-primary">Log in</button>
-            <a asp-controller="Account" asp-action="Register" asp-route-returnUrl="@ViewData["ReturnUrl"]" class="btn btn-link">Need an account? Register</a>
-        </form>
+        </div>
     </div>
-</div>
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+    <script src="@Url.Content("~/lib/jquery/dist/jquery.min.js")"></script>
+    <script src="@Url.Content("~/lib/jquery-validation/dist/jquery.validate.min.js")"></script>
+    <script src="@Url.Content("~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js")"></script>
+    <script>
+        var eyeOn = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+        var eyeOff = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
+
+        function togglePwd(inputId, btn) {
+            var input = document.getElementById(inputId);
+            var show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            btn.innerHTML = show ? eyeOff : eyeOn;
+        }
+    </script>
+
+</body>
+</html>

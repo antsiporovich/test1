@@ -7,7 +7,15 @@ public class ApplicationRowDto
     public int Id { get; set; }
 
     public string? Applicant { get; set; }
+
+    /// <summary>Combined "Property — Unit N" used by the PM grid's two-line column.</summary>
     public string Property { get; set; } = string.Empty;
+
+    /// <summary>Property name and unit number as separate values, used by the applicant
+    /// grid which renders them in distinct "Property" and "Unit #" columns.</summary>
+    public string PropertyName { get; set; } = string.Empty;
+    public string Unit { get; set; } = string.Empty;
+
     public string Status { get; set; } = string.Empty;
     public DateTimeOffset Updated { get; set; }
 }

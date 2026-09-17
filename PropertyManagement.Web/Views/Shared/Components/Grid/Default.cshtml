@@ -5,35 +5,40 @@
      data-grid-endpoint="@Model.ApiEndpoint"
      data-grid-page-size="@Model.PageSize"
      data-grid-row-url-template="@Model.RowUrlTemplate"
+     data-grid-row-action-label="@Model.RowActionLabel"
+     data-grid-item-label="@Model.ItemLabel"
+     data-grid-search-input-id="@Model.SearchInputId"
      data-grid-fixed-params="@JsonSerializer.Serialize(Model.FixedParams)">
-    <table class="table table-sm align-middle">
-        <thead>
-            <tr>
-                @foreach (var col in Model.Columns)
-                {
-                    <th data-key="@col.Key" data-sortable="@col.Sortable.ToString().ToLowerInvariant()" data-type="@col.Type" class="@(col.Sortable ? "grid-sortable" : "")">
-                        @col.Header
-                        @if (col.Sortable)
-                        {
-                            <span class="grid-sort-indicator"></span>
-                        }
-                    </th>
-                }
-            </tr>
-        </thead>
-        <tbody class="grid-body">
-            <tr>
-                <td colspan="@Model.Columns.Count" class="text-muted">
-                    <span class="spinner-border spinner-border-sm"></span> Loading…
-                </td>
-            </tr>
-        </tbody>
-    </table>
-    <nav class="d-flex justify-content-between align-items-center">
-        <span class="grid-summary text-muted small"></span>
-        <div class="btn-group btn-group-sm" role="group">
-            <button type="button" class="btn btn-outline-secondary grid-prev">Previous</button>
-            <button type="button" class="btn btn-outline-secondary grid-next">Next</button>
-        </div>
-    </nav>
+    <div class="overflow-x-auto grid-table-wrap">
+        <table class="w-full text-xs">
+            <thead>
+                <tr class="bg-gray-50 border-y border-gray-200">
+                    @foreach (var col in Model.Columns)
+                    {
+                        <th data-key="@col.Key" data-sortable="@col.Sortable.ToString().ToLowerInvariant()" data-type="@col.Type"
+                            class="text-left px-6 py-2 text-xs font-semibold text-gray-500 select-none @(col.Sortable ? "cursor-pointer hover:text-gray-700" : "")">
+                            @col.Header
+                            @if (col.Sortable)
+                            {
+                                <span class="grid-sort-indicator ml-0.5 text-brand-600"></span>
+                            }
+                        </th>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.RowActionLabel))
+                    {
+                        <th class="text-right px-6 py-2 text-xs font-semibold text-gray-500">Actions</th>
+                    }
+                </tr>
+            </thead>
+            <tbody class="grid-body">
+                <tr>
+                    <td colspan="@(Model.Columns.Count + (string.IsNullOrEmpty(Model.RowActionLabel) ? 0 : 1))" class="px-6 py-8 text-center text-sm text-gray-400">Loading…</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="flex items-center justify-between px-6 py-3.5 border-t border-gray-200">
+        <span class="grid-summary text-xs text-gray-500"></span>
+        <nav class="grid-pager flex items-center gap-1"></nav>
+    </div>
 </div>
