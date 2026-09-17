@@ -19,4 +19,27 @@ public interface IApplicationQueryService
         string? sortKey = null,
         bool descending = false,
         string? search = null);
+
+    /// <summary>Applicant wizard/detail load — ownership-scoped Includes.</summary>
+    Task<Application?> GetOwnedWithDetailsAsync(int id, string userId, CancellationToken ct = default);
+
+    /// <summary>PM detail/review load — any application, no ownership filter.</summary>
+    Task<Application?> GetForPmWithDetailsAsync(int id, CancellationToken ct = default);
+
+    Task<string?> GetClaimedByUserIdAsync(int id, CancellationToken ct = default);
+
+    Task<bool> ExistsAsync(int id, CancellationToken ct = default);
+
+    /// <summary>Tracked entity for note create (mutation via <see cref="IApplicationService"/>).</summary>
+    Task<Application?> GetTrackedByIdAsync(int id, CancellationToken ct = default);
+
+    Task<Residence?> GetResidenceAsNoTrackingAsync(int residenceId, CancellationToken ct = default);
+
+    Task<ApplicationNote?> GetNoteAsync(int applicationId, int noteId, bool asNoTracking = false, CancellationToken ct = default);
+
+    Task<IReadOnlyDictionary<string, string>> GetUserDisplayNamesAsync(IEnumerable<string> userIds, CancellationToken ct = default);
+
+    Task<IReadOnlyList<ApplicationNote>> GetNotesAsync(int applicationId, CancellationToken ct = default);
+
+    Task<string?> GetLatestReturnCommentAsync(int applicationId, CancellationToken ct = default);
 }

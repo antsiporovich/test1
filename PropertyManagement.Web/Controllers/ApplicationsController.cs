@@ -7,7 +7,6 @@ using PropertyManagement.Domain.Entities;
 using PropertyManagement.Domain.Enums;
 using PropertyManagement.Domain.Rules;
 using PropertyManagement.Domain.Validation;
-using PropertyManagement.Infrastructure.Data;
 using PropertyManagement.Infrastructure.Identity;
 using PropertyManagement.Infrastructure.Services;
 using PropertyManagement.Domain.Common;
@@ -21,8 +20,8 @@ namespace PropertyManagement.Web.Controllers;
 public class ApplicationsController(
     IApplicationService applicationService,
     IApplicationQueryService queryService,
-    UserManager<ApplicationUser> userManager,
-    AppDbContext db) : Controller
+    IPropertyService propertyService,
+    UserManager<ApplicationUser> userManager) : Controller
 {
     // Row data for this list now comes from the Bonus 1 grid (Features/10) fetching
     // /api/applications client-side — this action only builds the filter dropdowns
@@ -38,11 +37,9 @@ public class ApplicationsController(
             StatusOptions = Enum.GetValues<ApplicationStatus>()
                 .Select(s => new SelectListItem(s.ToString(), s.ToString()))
                 .ToList(),
-            PropertyOptions = await db.Properties
-                .Where(p => p.IsActive)
-                .OrderBy(p => p.Name)
+            PropertyOptions = (await propertyService.GetActivePropertiesAsync(ct))
                 .Select(p => new SelectListItem(p.Name, p.Id.ToString()))
-                .ToListAsync(ct),
+                .ToList(),
         };
 
         if (!isApplicant)
@@ -123,7 +120,7 @@ public class ApplicationsController(
                     // rejected edit — EF's identity map means even a fresh re-query would
                     // just hand back this same tracked (stale) instance, so reload it from
                     // the store explicitly to show their latest saved data, never ours.
-                    await db.Entry(application.ApplicantInfo!).ReloadAsync(ct);
+                    await applicationService.ReloadApplicantInfoAsync(application, ct);
                     var conflictVm = await BuildWizardViewModelAsync(application, WizardStep.ApplicantInformation, ct);
                     conflictVm.ConcurrencyError = saveResult.Errors.Values.SelectMany(e => e).FirstOrDefault();
                     return View("Wizard", conflictVm);
@@ -269,7 +266,7 @@ public class ApplicationsController(
         // before calling the service so a wrong-PM crafted request is rejected the same
         // way role/ownership mismatches are elsewhere (aspnet-identity-authorization.md).
         // ReleaseAsync's own conditional update is the backstop against a same-id race.
-        var claimedBy = await db.Applications.Where(a => a.Id == id).Select(a => (string?)a.ClaimedByUserId).FirstOrDefaultAsync(ct);
+        var claimedBy = await queryService.GetClaimedByUserIdAsync(id, ct);
         if (claimedBy != userId)
         {
             return Forbid();
@@ -393,7 +390,7 @@ public class ApplicationsController(
             // MULTI-4: re-render the modal with the co-applicant's latest saved data
             // (not this user's rejected edit) plus the "reload" message.
             ModelState.Clear();
-            var fresh = await db.Residences.AsNoTracking().FirstOrDefaultAsync(r => r.Id == residenceId, ct);
+            var fresh = await queryService.GetResidenceAsNoTrackingAsync(residenceId, ct);
             ModelState.AddModelError(string.Empty, updateResult.Errors.Values.SelectMany(e => e).FirstOrDefault() ?? "Could not save.");
             return PartialView("_ResidenceForm", fresh is null ? model : MapResidence(fresh, applicationId));
         }
@@ -522,7 +519,7 @@ public class ApplicationsController(
     [Authorize(Roles = "PropertyManager")]
     public async Task<IActionResult> CreateNoteForm(int id, CancellationToken ct)
     {
-        var exists = await db.Applications.AnyAsync(a => a.Id == id, ct);
+        var exists = await queryService.ExistsAsync(id, ct);
         if (!exists) return NotFound();
         return PartialView("_NoteForm", new NoteFormViewModel { ApplicationId = id });
     }
@@ -533,7 +530,7 @@ public class ApplicationsController(
     public async Task<IActionResult> CreateNote(int id, NoteFormViewModel model, CancellationToken ct)
     {
         model.ApplicationId = id;
-        var application = await db.Applications.FirstOrDefaultAsync(a => a.Id == id, ct);
+        var application = await queryService.GetTrackedByIdAsync(id, ct);
         if (application is null) return NotFound();
 
         if (!ModelState.IsValid)
@@ -547,9 +544,7 @@ public class ApplicationsController(
     [Authorize(Roles = "PropertyManager")]
     public async Task<IActionResult> EditNoteForm(int id, int noteId, CancellationToken ct)
     {
-        var note = await db.ApplicationNotes
-            .AsNoTracking()
-            .FirstOrDefaultAsync(n => n.Id == noteId && n.ApplicationId == id, ct);
+        var note = await queryService.GetNoteAsync(id, noteId, asNoTracking: true, ct);
         if (note is null) return NotFound();
         return PartialView("_NoteForm", new NoteFormViewModel { ApplicationId = id, NoteId = noteId, Body = note.Body });
     }
@@ -561,7 +556,7 @@ public class ApplicationsController(
     {
         model.ApplicationId = id;
         model.NoteId = noteId;
-        var note = await db.ApplicationNotes.FirstOrDefaultAsync(n => n.Id == noteId && n.ApplicationId == id, ct);
+        var note = await queryService.GetNoteAsync(id, noteId, asNoTracking: false, ct);
         if (note is null) return NotFound();
 
         if (!ModelState.IsValid)
@@ -585,26 +580,12 @@ public class ApplicationsController(
     private async Task<Application?> LoadOwnedApplicationAsync(int id, CancellationToken ct)
     {
         var userId = userManager.GetUserId(User)!;
-        return await db.Applications
-            .Include(a => a.Unit).ThenInclude(u => u.Property)
-            .Include(a => a.ApplicantInfo)
-            .Include(a => a.Residences)
-            .Include(a => a.Applicants)
-            .Include(a => a.StatusHistory)
-            .OwnedBy(userId)
-            .FirstOrDefaultAsync(a => a.Id == id, ct);
+        return await queryService.GetOwnedWithDetailsAsync(id, userId, ct);
     }
 
     /// <summary>PM-side load — no ownership filter; PMs may view any application.</summary>
-    private async Task<Application?> LoadApplicationForPmAsync(int id, CancellationToken ct) =>
-        await db.Applications
-            .Include(a => a.Unit).ThenInclude(u => u.Property)
-            .Include(a => a.Unit).ThenInclude(u => u.UnitType)
-            .Include(a => a.ApplicantInfo)
-            .Include(a => a.Residences)
-            .Include(a => a.Applicants)
-            .Include(a => a.StatusHistory)
-            .FirstOrDefaultAsync(a => a.Id == id, ct);
+    private Task<Application?> LoadApplicationForPmAsync(int id, CancellationToken ct) =>
+        queryService.GetForPmWithDetailsAsync(id, ct);
 
     /// <summary>REVIEW-1: only the submitting PM (Submitted) or the claiming PM
     /// (UnderReview + claimedBy == me) may complete a review.</summary>
@@ -619,16 +600,14 @@ public class ApplicationsController(
     {
         // Resolve actor display names for the history table in one DB round-trip.
         var actorIds = application.StatusHistory.Select(h => h.ActorUserId).Distinct().ToList();
-        var actorNames = await db.Users
-            .Where(u => actorIds.Contains(u.Id))
-            .ToDictionaryAsync(u => u.Id, u => u.DisplayName ?? u.UserName ?? u.Id, ct);
+        var actorNames = await queryService.GetUserDisplayNamesAsync(actorIds, ct);
 
         // Collect applicant display names for the header.
         var applicantUserIds = application.Applicants.Select(a => a.UserId).ToList();
-        var applicantNames = await db.Users
-            .Where(u => applicantUserIds.Contains(u.Id))
-            .Select(u => u.DisplayName ?? u.Email ?? u.Id)
-            .ToListAsync(ct);
+        var applicantNameMap = await queryService.GetUserDisplayNamesAsync(applicantUserIds, ct);
+        var applicantNames = applicantUserIds
+            .Select(id => applicantNameMap.TryGetValue(id, out var n) ? n : id)
+            .ToList();
 
         var unit = application.Unit;
         var property = unit.Property;
@@ -691,19 +670,10 @@ public class ApplicationsController(
     /// <summary>NOTES-1/NOTES-2: loads notes with author display names in one round-trip.</summary>
     private async Task<List<NoteRowViewModel>> NotesListAsync(int applicationId, CancellationToken ct)
     {
-        var notes = await db.ApplicationNotes
-            .AsNoTracking()
-            .Where(n => n.ApplicationId == applicationId)
-            .OrderBy(n => n.CreatedAt)
-            .Select(n => new { n.Id, n.Body, n.AuthorUserId, n.CreatedAt })
-            .ToListAsync(ct);
-
+        var notes = await queryService.GetNotesAsync(applicationId, ct);
         if (notes.Count == 0) return [];
 
-        var authorIds = notes.Select(n => n.AuthorUserId).Distinct().ToList();
-        var authorNames = await db.Users
-            .Where(u => authorIds.Contains(u.Id))
-            .ToDictionaryAsync(u => u.Id, u => u.DisplayName ?? u.UserName ?? u.Id, ct);
+        var authorNames = await queryService.GetUserDisplayNamesAsync(notes.Select(n => n.AuthorUserId), ct);
 
         return notes.Select(n => new NoteRowViewModel
         {
@@ -731,11 +701,7 @@ public class ApplicationsController(
 
         if (application.Status == ApplicationStatus.Returned)
         {
-            vm.ReturnComment = await db.ApplicationStatusHistories
-                .Where(h => h.ApplicationId == application.Id && h.ToStatus == ApplicationStatus.Returned)
-                .OrderByDescending(h => h.Timestamp)
-                .Select(h => h.Comment)
-                .FirstOrDefaultAsync(ct);
+            vm.ReturnComment = await queryService.GetLatestReturnCommentAsync(application.Id, ct);
         }
 
         // VALID-2: the same validator that feeds the Summary's outstanding list also

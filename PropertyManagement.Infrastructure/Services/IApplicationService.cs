@@ -100,4 +100,9 @@ public interface IApplicationService
 
     /// <summary>NOTES-1: overwrites the body of an existing note.</summary>
     Task UpdateNoteAsync(ApplicationNote note, string body, CancellationToken ct = default);
+
+    /// <summary>MULTI-4: after a concurrency reject, reload ApplicantInfo from the store
+    /// so the UI shows the co-applicant's saved data (EF identity map would otherwise
+    /// keep returning the rejected in-memory edit).</summary>
+    Task ReloadApplicantInfoAsync(Application application, CancellationToken ct = default);
 }

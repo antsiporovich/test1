@@ -20,10 +20,18 @@ framework). All business rules are enforced server-side, not by hidden UI.
 
 ## Solution layout
 
+Open `PropertyManagement.sln` (in this folder) in Visual Studio / Rider, or:
+
+```
+dotnet build PropertyManagement.sln
+dotnet test PropertyManagement.sln
+dotnet run --project PropertyManagement.Web
+```
+
 - `PropertyManagement.Domain` — entities, enums, pure business rules (no EF/ASP.NET)
 - `PropertyManagement.Infrastructure` — `AppDbContext`, EF configs, migrations, Identity, Bogus seeder, services
 - `PropertyManagement.Web` — controllers, view models, Razor views/partials/view components, startup, OpenAPI
-- `PropertyManagement.Tests` — xUnit business-logic tests
+- `PropertyManagement.Tests` — xUnit business-logic + MVC integration tests
 
 Dependency direction: Web → Infrastructure → Domain.
 

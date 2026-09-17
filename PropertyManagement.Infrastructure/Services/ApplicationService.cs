@@ -343,6 +343,16 @@ public class ApplicationService(AppDbContext db, TimeProvider timeProvider) : IA
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task ReloadApplicantInfoAsync(Application application, CancellationToken ct = default)
+    {
+        if (application.ApplicantInfo is null)
+        {
+            return;
+        }
+
+        await db.Entry(application.ApplicantInfo).ReloadAsync(ct);
+    }
+
     private static void ApplyResidenceInput(Residence residence, ResidenceInput input)
     {
         residence.AddressLine1 = input.AddressLine1;

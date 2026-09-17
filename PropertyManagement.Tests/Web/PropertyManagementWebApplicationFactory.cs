@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using PropertyManagement.Domain.Entities;
 using PropertyManagement.Domain.Enums;
@@ -16,6 +17,7 @@ namespace PropertyManagement.Tests.Web;
 /// <summary>
 /// Boots the real MVC app against an isolated InMemory database (no SQL Server /
 /// MigrateAsync). Uses <see cref="TestAuthHandler"/> so tests authenticate via headers.
+/// InMemory lives only on this test project — ConfigureTestServices swaps the provider.
 /// </summary>
 public sealed class PropertyManagementWebApplicationFactory : WebApplicationFactory<Program>
 {
@@ -24,10 +26,13 @@ public sealed class PropertyManagementWebApplicationFactory : WebApplicationFact
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
-        builder.UseSetting("TestDbName", _dbName);
 
         builder.ConfigureTestServices(services =>
         {
+            RemoveDbContextRegistrations(services);
+            services.AddDbContext<AppDbContext>(options =>
+                options.UseInMemoryDatabase(_dbName));
+
             services.PostConfigure<MvcOptions>(options =>
                 options.Filters.Add(new IgnoreAntiforgeryTokenAttribute()));
 
@@ -42,6 +47,30 @@ public sealed class PropertyManagementWebApplicationFactory : WebApplicationFact
 
             services.AddSingleton<Microsoft.AspNetCore.Antiforgery.IAntiforgery, TestAntiforgery>();
         });
+    }
+
+    /// <summary>
+    /// Strip Program's SqlServer DbContextOptions so UseInMemoryDatabase is the only provider.
+    /// </summary>
+    private static void RemoveDbContextRegistrations(IServiceCollection services)
+    {
+        var toRemove = services
+            .Where(d =>
+                d.ServiceType == typeof(AppDbContext)
+                || d.ServiceType == typeof(DbContextOptions)
+                || d.ServiceType == typeof(DbContextOptions<AppDbContext>)
+                || (d.ServiceType.IsGenericType
+                    && d.ServiceType.GetGenericTypeDefinition() == typeof(IDbContextOptionsConfiguration<>)
+                    && d.ServiceType.GenericTypeArguments[0] == typeof(AppDbContext))
+                || (d.ServiceType.IsGenericType
+                    && d.ServiceType.GetGenericTypeDefinition() == typeof(DbContextOptions<>)
+                    && d.ServiceType.GenericTypeArguments[0] == typeof(AppDbContext)))
+            .ToList();
+
+        foreach (var descriptor in toRemove)
+        {
+            services.Remove(descriptor);
+        }
     }
 
     public async Task EnsureCreatedAsync()

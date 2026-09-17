@@ -8,21 +8,17 @@ using PropertyManagement.Infrastructure.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-if (builder.Environment.IsEnvironment("Testing"))
-{
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseInMemoryDatabase(builder.Configuration["TestDbName"] ?? "PropertyManagementTests"));
-}
-else
-{
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+// Testing uses SqlServer registration as a placeholder; WebApplicationFactory replaces
+// the provider with InMemory (package lives only on the test project).
+var connectionString = builder.Environment.IsEnvironment("Testing")
+    ? "Server=(localdb)\\mssqllocaldb;Database=PropertyManagement_Unused;Trusted_Connection=True;TrustServerCertificate=True"
+    : builder.Configuration.GetConnectionString("DefaultConnection")
         ?? throw new InvalidOperationException(
             "Connection string 'DefaultConnection' not found. Set it via 'dotnet user-secrets set " +
             "ConnectionStrings:DefaultConnection \"...\"' (or the ConnectionStrings__DefaultConnection " +
             "environment variable) — never commit it to appsettings.json.");
 
-    builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
-}
+builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
 
 builder.Services
     .AddIdentity<ApplicationUser, IdentityRole>(options =>

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using PropertyManagement.Domain.Entities;
 using PropertyManagement.Domain.Enums;
 using PropertyManagement.Domain.Rules;
@@ -41,6 +42,77 @@ public class ApplicationQueryService(AppDbContext db) : IApplicationQueryService
 
         return ApplySort(query, sortKey, descending);
     }
+
+    public Task<Application?> GetOwnedWithDetailsAsync(int id, string userId, CancellationToken ct = default) =>
+        db.Applications
+            .Include(a => a.Unit).ThenInclude(u => u.Property)
+            .Include(a => a.ApplicantInfo)
+            .Include(a => a.Residences)
+            .Include(a => a.Applicants)
+            .Include(a => a.StatusHistory)
+            .OwnedBy(userId)
+            .FirstOrDefaultAsync(a => a.Id == id, ct);
+
+    public Task<Application?> GetForPmWithDetailsAsync(int id, CancellationToken ct = default) =>
+        db.Applications
+            .Include(a => a.Unit).ThenInclude(u => u.Property)
+            .Include(a => a.Unit).ThenInclude(u => u.UnitType)
+            .Include(a => a.ApplicantInfo)
+            .Include(a => a.Residences)
+            .Include(a => a.Applicants)
+            .Include(a => a.StatusHistory)
+            .FirstOrDefaultAsync(a => a.Id == id, ct);
+
+    public Task<string?> GetClaimedByUserIdAsync(int id, CancellationToken ct = default) =>
+        db.Applications.Where(a => a.Id == id).Select(a => (string?)a.ClaimedByUserId).FirstOrDefaultAsync(ct);
+
+    public Task<bool> ExistsAsync(int id, CancellationToken ct = default) =>
+        db.Applications.AnyAsync(a => a.Id == id, ct);
+
+    public Task<Application?> GetTrackedByIdAsync(int id, CancellationToken ct = default) =>
+        db.Applications.FirstOrDefaultAsync(a => a.Id == id, ct);
+
+    public Task<Residence?> GetResidenceAsNoTrackingAsync(int residenceId, CancellationToken ct = default) =>
+        db.Residences.AsNoTracking().FirstOrDefaultAsync(r => r.Id == residenceId, ct);
+
+    public Task<ApplicationNote?> GetNoteAsync(int applicationId, int noteId, bool asNoTracking = false, CancellationToken ct = default)
+    {
+        IQueryable<ApplicationNote> query = db.ApplicationNotes;
+        if (asNoTracking)
+        {
+            query = query.AsNoTracking();
+        }
+
+        return query.FirstOrDefaultAsync(n => n.Id == noteId && n.ApplicationId == applicationId, ct);
+    }
+
+    public async Task<IReadOnlyDictionary<string, string>> GetUserDisplayNamesAsync(
+        IEnumerable<string> userIds, CancellationToken ct = default)
+    {
+        var ids = userIds.Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return new Dictionary<string, string>();
+        }
+
+        return await db.Users
+            .Where(u => ids.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.DisplayName ?? u.Email ?? u.UserName ?? u.Id, ct);
+    }
+
+    public async Task<IReadOnlyList<ApplicationNote>> GetNotesAsync(int applicationId, CancellationToken ct = default) =>
+        await db.ApplicationNotes
+            .AsNoTracking()
+            .Where(n => n.ApplicationId == applicationId)
+            .OrderBy(n => n.CreatedAt)
+            .ToListAsync(ct);
+
+    public Task<string?> GetLatestReturnCommentAsync(int applicationId, CancellationToken ct = default) =>
+        db.ApplicationStatusHistories
+            .Where(h => h.ApplicationId == applicationId && h.ToStatus == ApplicationStatus.Returned)
+            .OrderByDescending(h => h.Timestamp)
+            .Select(h => h.Comment)
+            .FirstOrDefaultAsync(ct);
 
     // Allow-listed switch, never a client-provided column name interpolated into the
     // query (GRID-2). The "updated" expression is duplicated (not shared via a method
