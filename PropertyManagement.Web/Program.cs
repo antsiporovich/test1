@@ -8,13 +8,21 @@ using PropertyManagement.Infrastructure.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException(
-        "Connection string 'DefaultConnection' not found. Set it via 'dotnet user-secrets set " +
-        "ConnectionStrings:DefaultConnection \"...\"' (or the ConnectionStrings__DefaultConnection " +
-        "environment variable) — never commit it to appsettings.json.");
+if (builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseInMemoryDatabase(builder.Configuration["TestDbName"] ?? "PropertyManagementTests"));
+}
+else
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException(
+            "Connection string 'DefaultConnection' not found. Set it via 'dotnet user-secrets set " +
+            "ConnectionStrings:DefaultConnection \"...\"' (or the ConnectionStrings__DefaultConnection " +
+            "environment variable) — never commit it to appsettings.json.");
 
-builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+    builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+}
 
 builder.Services
     .AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -45,8 +53,10 @@ builder.Services.AddOpenApi();
 var app = builder.Build();
 
 // On start: create the database, apply migrations, then seed idempotently (Assesment.md 2.b).
-using (var scope = app.Services.CreateScope())
+// Testing host seeds per-test fixtures instead (see PropertyManagement.Tests/Web).
+if (!app.Environment.IsEnvironment("Testing"))
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
 
@@ -55,14 +65,18 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
 {
     app.UseExceptionHandler("/Home/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseRouting();
 
 app.UseAuthentication();
@@ -78,3 +92,5 @@ app.MapControllerRoute(
 app.MapOpenApi();
 
 app.Run();
+
+public partial class Program;

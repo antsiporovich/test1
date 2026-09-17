@@ -77,8 +77,6 @@ public class ApplicationsApiController(IApplicationQueryService queryService, Us
                 PropertyAddress = a.Unit.Property.AddressLine1 + ", " + a.Unit.Property.City,
                 Bedrooms = a.Unit.Bedrooms,
                 Bathrooms = a.Unit.Bathrooms,
-                PropertyName = a.Unit.Property.Name,
-                Unit = a.Unit.UnitNumber,
                 Status = a.Status == ApplicationStatus.UnderReview
                     ? "Under Review (" + userManager.Users.Where(u => u.Id == a.ClaimedByUserId).Select(u => u.DisplayName).FirstOrDefault() + ")"
                     : a.Status.ToString(),
