@@ -76,6 +76,12 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (e) {
             fixedParams = {};
         }
+        var filterInputIds = {};
+        try {
+            filterInputIds = JSON.parse(root.dataset.gridFilterInputIds || '{}');
+        } catch (e) {
+            filterInputIds = {};
+        }
 
         var headers = Array.from(root.querySelectorAll('thead th[data-key]'));
         var colCount = root.querySelectorAll('thead th').length;
@@ -391,6 +397,30 @@ document.addEventListener('DOMContentLoaded', function () {
                 }, 300));
             }
         }
+
+        // Page-level filter dropdowns (e.g. Status/Property): fold the changed value
+        // into fixedParams and re-fetch in place — no full-page form submit, so the
+        // page never jumps back to the top the way onchange="this.form.submit()" would.
+        Object.keys(filterInputIds).forEach(function (paramName) {
+            var input = document.getElementById(filterInputIds[paramName]);
+            if (!input) { return; }
+            input.addEventListener('change', function () {
+                if (input.value) {
+                    fixedParams[paramName] = input.value;
+                } else {
+                    delete fixedParams[paramName];
+                }
+                var url = new URL(window.location.href);
+                if (input.value) {
+                    url.searchParams.set(paramName, input.value);
+                } else {
+                    url.searchParams.delete(paramName);
+                }
+                window.history.replaceState(null, '', url);
+                state.page = 1;
+                load();
+            });
+        });
 
         load();
     });

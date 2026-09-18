@@ -155,11 +155,35 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
+        // VALID-1 / Back-without-saving both require that client-side validation never
+        // blocks a wizard submit — only the server decides. Setting
+        // validator.settings.onsubmit = false here has no effect: jQuery Validate reads
+        // that flag once, at .validate() time (already called by unobtrusive.parse before
+        // this script runs), to decide whether to attach its own submit-blocking handler
+        // at all — mutating the setting afterward doesn't detach it. So instead we bypass
+        // the browser's 'submit' event entirely: HTMLFormElement.submit() (unlike
+        // requestSubmit() or a native button click) never fires 'submit' per spec, which
+        // skips every listener bound to it, jQuery Validate's included. The clicked
+        // button's name/value pair is only added by the browser's default action for a
+        // real submit click, so we add it back manually before calling submit().
         $(function () {
-            var validator = $('#wizardForm').data('validator');
-            if (validator) {
-                validator.settings.onsubmit = false;
-            }
+            var form = document.getElementById('wizardForm');
+            if (!form) return;
+
+            form.querySelectorAll('button[type="submit"][name="command"]').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    var hidden = form.querySelector('input[name="command"]');
+                    if (!hidden) {
+                        hidden = document.createElement('input');
+                        hidden.type = 'hidden';
+                        hidden.name = 'command';
+                        form.appendChild(hidden);
+                    }
+                    hidden.value = btn.value;
+                    form.submit();
+                });
+            });
         });
     </script>
 }

@@ -20,6 +20,13 @@ public class GridViewModel
     /// means no search box is wired to this grid instance.</summary>
     public string? SearchInputId { get; set; }
 
+    /// <summary>Optional map of query-param name to the id of a page-level
+    /// `&lt;select&gt;`/`&lt;input&gt;` (e.g. status/property filter dropdowns) the grid
+    /// listens to on change: it folds the current value into <see cref="FixedParams"/>,
+    /// resets to page 1, and re-fetches — no full page reload, unlike a plain
+    /// `onchange="this.form.submit()"` filter form.</summary>
+    public Dictionary<string, string> FilterInputIds { get; set; } = [];
+
     /// <summary>When set (with <see cref="RowUrlTemplate"/>), the grid renders a trailing
     /// "Actions" column whose cell is a button with this label linking to the row URL
     /// (e.g. "View"). Null/empty renders no action column.</summary>

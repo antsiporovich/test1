@@ -48,7 +48,10 @@ public class ApplicationsController(
             vm.QueueRows = await queryService
                 .BuildQuery(userId, isApplicant: false)
                 .Where(a => a.Status == ApplicationStatus.Submitted || a.Status == ApplicationStatus.UnderReview)
-                .OrderBy(a => a.Status).ThenBy(a => a.CreatedAtUtc)
+                // Sorted by age only, not by Status — Claim flips Submitted -> UnderReview,
+                // and sorting by Status first would jump the row to a different group the
+                // instant it's claimed instead of leaving it in place.
+                .OrderBy(a => a.CreatedAtUtc)
                 .Select(a => new ReviewQueueRowViewModel
                 {
                     Id = a.Id,

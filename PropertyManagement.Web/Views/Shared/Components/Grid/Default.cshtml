@@ -14,7 +14,8 @@
      data-grid-show-overflow="@(Model.ShowRowOverflowMenu ? "true" : "false")"
      data-grid-item-label="@Model.ItemLabel"
      data-grid-search-input-id="@Model.SearchInputId"
-     data-grid-fixed-params="@JsonSerializer.Serialize(Model.FixedParams)">
+     data-grid-fixed-params="@JsonSerializer.Serialize(Model.FixedParams)"
+     data-grid-filter-input-ids="@JsonSerializer.Serialize(Model.FilterInputIds)">
     <div class="overflow-x-auto grid-table-wrap">
         <table class="w-full text-xs @(useFixed ? "table-fixed" : "")">
             @if (useFixed && hasWidths)
