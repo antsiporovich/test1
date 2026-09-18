@@ -163,4 +163,36 @@ public class ApplicationQueryServiceTests
         totalCount.Should().Be(3);
         page.Should().HaveCount(2);
     }
+
+    // Regression for a real bug caught during demo rehearsal: InMemory silently allows
+    // an OrderBy over a constructed DTO's property, but SQL Server/SQLite cannot
+    // translate it and throw InvalidOperationException — GetCoApplicantsAsync crashed
+    // the Summary page for any application with 2+ applicants (Bonus 5) until fixed.
+    [Fact]
+    public async Task GetCoApplicantsAsync_MultipleApplicants_ReturnsBothWithoutThrowing()
+    {
+        using var connection = new Microsoft.Data.Sqlite.SqliteConnection("DataSource=:memory:");
+        connection.Open();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        using var db = new AppDbContext(options);
+        db.Database.EnsureCreated();
+
+        db.Users.AddRange(
+            new PropertyManagement.Infrastructure.Identity.ApplicationUser { Id = "userA", UserName = "a@test.local", Email = "a@test.local", DisplayName = "Bravo Applicant" },
+            new PropertyManagement.Infrastructure.Identity.ApplicationUser { Id = "userB", UserName = "b@test.local", Email = "b@test.local", DisplayName = "Alpha Applicant" });
+        var unitType = new UnitType { Name = "Studio", IsActive = true };
+        var property = new Property { Name = "P1", AddressLine1 = "1 A St", City = "C", State = "S", ZipCode = "00000" };
+        var unit = new Unit { Property = property, UnitNumber = "101", UnitType = unitType, MonthlyRent = 1000 };
+        var app = new Application { Unit = unit, Status = ApplicationStatus.Submitted, CreatedAtUtc = DateTimeOffset.UtcNow };
+        app.Applicants.Add(new ApplicationApplicant { UserId = "userA", AddedAtUtc = DateTimeOffset.UtcNow });
+        app.Applicants.Add(new ApplicationApplicant { UserId = "userB", AddedAtUtc = DateTimeOffset.UtcNow });
+        db.Applications.Add(app);
+        await db.SaveChangesAsync();
+
+        var service = new ApplicationQueryService(db);
+        var act = () => service.GetCoApplicantsAsync(app.Id);
+
+        var result = await act.Should().NotThrowAsync();
+        result.Subject.Select(c => c.DisplayName).Should().Equal("Alpha Applicant", "Bravo Applicant");
+    }
 }

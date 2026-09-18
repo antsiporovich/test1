@@ -124,10 +124,12 @@ public class ApplicationQueryService(AppDbContext db) : IApplicationQueryService
     public async Task<IReadOnlyList<CoApplicantDto>> GetCoApplicantsAsync(int applicationId, CancellationToken ct = default) =>
         await db.ApplicationApplicants
             .Where(a => a.ApplicationId == applicationId)
-            .Join(db.Users, a => a.UserId, u => u.Id, (a, u) => new CoApplicantDto(
-                u.DisplayName ?? u.UserName ?? u.Id,
-                u.Email ?? string.Empty))
-            .OrderBy(a => a.DisplayName)
+            .Join(db.Users, a => a.UserId, u => u.Id, (a, u) => u)
+            // Order by the raw column expression, not a constructed CoApplicantDto's
+            // property — EF Core cannot translate OrderBy over a client-side record
+            // constructor (same rule as the ApplySort note below for GRID-2).
+            .OrderBy(u => u.DisplayName ?? u.UserName ?? u.Id)
+            .Select(u => new CoApplicantDto(u.DisplayName ?? u.UserName ?? u.Id, u.Email ?? string.Empty))
             .AsNoTracking()
             .ToListAsync(ct);
 
